@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>医療法人隆仁会 納病院 — 人事評価システム</title>
+<style>
+:root{
+  --teal:#1D9E75;--teal-l:#E1F5EE;--teal-d:#0F6E56;
+  --blue:#378ADD;--blue-l:#E6F1FB;--blue-d:#185FA5;
+  --amber:#BA7517;--amber-l:#FAEEDA;--amber-d:#854F0B;
+  --purple:#7F77DD;--purple-l:#EEEDFE;--purple-d:#3C3489;
+  --red:#E24B4A;--red-l:#FCEBEB;
+  --green:#639922;--green-l:#EAF3DE;
+  --bg:#fff;--bg2:#f4f3ef;--bg3:#eae8e0;
+  --text:#1a1a1a;--text2:#555;--text3:#999;
+  --border:rgba(0,0,0,.1);--border2:rgba(0,0,0,.2);
+  --r:10px;--rs:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;font-size:14px;background:var(--bg2);color:var(--text);min-height:100vh}
+h2{font-size:17px;font-weight:500}h3{font-size:15px;font-weight:500}h4{font-size:13px;font-weight:500}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:inherit;font-size:13px;padding:8px 10px;border:0.5px solid #ccc;border-radius:var(--rs);outline:none;background:var(--bg);color:var(--text);width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--teal);box-shadow:0 0 0 2px rgba(29,158,117,.12)}
+textarea{resize:vertical;min-height:68px}
+.card{background:var(--bg);border:0.5px solid var(--border);border-radius:var(--r);padding:1rem 1.2rem}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-secondary{background:transparent;border:0.5px solid var(--border2);color:var(--text2)}
+.btn-danger{background:var(--red-l);color:var(--red);border:0.5px solid var(--red)}
+.btn-warn{background:var(--amber-l);color:var(--amber-d);border:0.5px solid var(--amber)}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px}
+.badge{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.flex{display:flex;align-items:center}
+.fb{display:flex;align-items:center;justify-content:space-between}
+.gap6{gap:6px}.gap8{gap:8px}.gap10{gap:10px}.gap12{gap:12px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.mb16{margin-bottom:16px}
+.muted{color:var(--text3);font-size:12px}
+.sm{font-size:12px}
+.pbar-bg{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden}
+.pbar-fill{height:6px;border-radius:4px;transition:width .4s}
+/* Layout */
+#layout{display:flex;height:100vh;overflow:hidden}
+#sidebar{width:188px;flex-shrink:0;background:var(--bg);border-right:0.5px solid var(--border);padding:.8rem 9px;display:flex;flex-direction:column;gap:3px;overflow-y:auto}
+#sidebar-hd{padding:0 5px 10px;border-bottom:0.5px solid var(--border);margin-bottom:7px}
+.nav-i{display:flex;align-items:center;gap:8px;width:100%;padding:8px 11px;background:transparent;border:none;border-radius:7px;color:var(--text2);font-size:13px;cursor:pointer;text-align:left;transition:all .1s}
+.nav-i:hover{background:var(--bg2)}
+.nav-i.on{background:var(--teal-l);color:var(--teal-d);font-weight:500}
+.nav-sep{height:0.5px;background:var(--border);margin:6px 4px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#topbar{padding:10px 20px;background:var(--bg);border-bottom:0.5px solid var(--border);font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+#content{flex:1;overflow-y:auto;padding:15px;max-width:800px}
+/* Login */
+#login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg2)}
+.login-box{background:var(--bg);border-radius:14px;padding:2rem 2.2rem;width:100%;max-width:400px;border:0.5px solid var(--border)}
+/* BARS */
+.bars-q{margin-bottom:18px;padding-bottom:18px;border-bottom:0.5px solid var(--border)}
+.bars-q:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.bars-title{font-size:13px;font-weight:500;margin-bottom:8px;line-height:1.5;color:var(--text)}
+.bars-opts{display:grid;gap:6px}
+.bars-opt{display:flex;align-items:flex-start;gap:9px;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:transparent;text-align:left;transition:border-color .1s,background .1s;width:100%}
+.bars-opt:hover{border-color:var(--border2)}
+.sel10{border-color:var(--teal)!important;background:var(--teal-l)}
+.sel5{border-color:var(--blue)!important;background:var(--blue-l)}
+.sel1{border-color:var(--amber)!important;background:var(--amber-l)}
+.radio{min-width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);background:transparent;margin-top:1px;flex-shrink:0;transition:all .1s}
+.sel10 .radio{border-color:var(--teal);background:var(--teal)}
+.sel5 .radio{border-color:var(--blue);background:var(--blue)}
+.sel1 .radio{border-color:var(--amber);background:var(--amber)}
+.opt-lbl{font-size:11px;font-weight:500;margin-bottom:1px}
+.opt-desc{font-size:11px;color:var(--text3);line-height:1.5}
+.lbl10{color:var(--teal-d)}.lbl5{color:var(--blue-d)}.lbl1{color:var(--amber-d)}
+/* Form progress */
+.fprog{display:flex;gap:3px;margin-bottom:14px}
+.fprog-s{flex:1;height:3px;border-radius:2px;background:var(--border)}
+.fprog-s.done{background:var(--teal)}.fprog-s.now{background:#9FE1CB}
+/* Split pane */
+#split-wrap{display:flex;height:100%;overflow:hidden;gap:0}
+#split-left{width:40%;flex-shrink:0;overflow-y:auto;padding:14px;background:var(--bg2);border-right:0.5px solid var(--border)}
+#split-right{flex:1;overflow-y:auto;padding:14px}
+.self-ans-item{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px}
+.self-ans-v{font-weight:500;white-space:nowrap;margin-left:8px}
+/* Badges */
+.status-draft{background:#f0efe9;color:#888}
+.status-submitted{background:var(--blue-l);color:var(--blue-d)}
+.status-approved_1{background:var(--amber-l);color:var(--amber-d)}
+.status-approved_2{background:var(--teal-l);color:var(--teal-d)}
+.status-rejected{background:var(--red-l);color:var(--red)}
+.gS{background:var(--purple-l);color:var(--purple-d)}
+.gA{background:var(--teal-l);color:var(--teal-d)}
+.gB{background:var(--blue-l);color:var(--blue-d)}
+.gC{background:var(--amber-l);color:var(--amber-d)}
+.gD{background:var(--red-l);color:var(--red)}
+/* Table */
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--border);color:var(--text3);font-weight:500;white-space:nowrap}
+.tbl td{padding:6px 8px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+/* Bar chart */
+.bchart{display:grid;gap:7px}
+.brow{display:flex;align-items:center;gap:8px;font-size:12px}
+.brow-lbl{min-width:72px;color:var(--text2);text-align:right;font-size:11px}
+.btrack{flex:1;background:var(--bg3);border-radius:4px;height:18px;overflow:hidden}
+.bfill{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:10px;font-weight:500;color:#fff;min-width:0}
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px}
+.modal{background:var(--bg);border-radius:var(--r);padding:1.4rem 1.5rem;max-width:480px;width:100%;max-height:85vh;overflow-y:auto}
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;z-index:200;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:500;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+/* Role chip */
+.role-chip{display:inline-block;font-size:10px;padding:1px 6px;border-radius:4px;margin-left:4px}
+.role-sysadmin{background:#EDE9FF;color:#5B4FCC}
+.role-incho{background:#FDE8E8;color:#C0392B}
+.role-jimucho{background:var(--amber-l);color:var(--amber-d)}
+.role-head{background:var(--blue-l);color:var(--blue-d)}
+.role-staff{background:var(--bg3);color:var(--text2)}
+/* Grade card */
+.grade-card{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;border-radius:var(--r);padding:13px 16px;border:1.5px solid}
+.grade-big{font-size:44px;font-weight:700;line-height:1;text-align:center;min-width:64px}
+/* Approval timeline */
+.tml-item{display:flex;gap:10px;padding:8px 0}
+.tml-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.tml-line{width:1px;background:var(--border);margin:0 4px;flex-shrink:0}
+/* Print */
+@media print{
+  #sidebar,#topbar,.no-print{display:none!important}
+  #layout{display:block}#main{display:block}#content{padding:0;max-width:100%;overflow:visible}
+  body{background:#fff;font-size:11px}
+  .card{border:1px solid #ccc;page-break-inside:avoid}
+  .grade-big{font-size:28px}.btn{display:none}
+  #split-wrap{display:block}#split-left,#split-right{width:100%;border:none;overflow:visible}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+// ═══════════════════════════════════════════════════
+// CLOUD CONFIG (管理者がUIから設定)
+// ═══════════════════════════════════════════════════
+const CFG_KEY = 'ryujinkai_cfg';
+let CLOUD = (()=>{
+  try { return JSON.parse(localStorage.getItem(CFG_KEY))||{url:'',secret:''}; }
+  catch(e){ return {url:'',secret:''}; }
+})();
+function saveCloudCfg(){ localStorage.setItem(CFG_KEY, JSON.stringify(CLOUD)); }
+
+let syncStatus = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
+
+async function loadFromCloud(){
+  if(!CLOUD.url||!CLOUD.secret) return null;
+  try {
+    const r = await fetch(CLOUD.url+'?secret='+encodeURIComponent(CLOUD.secret)+'&action=load');
+    if(!r.ok) return null;
+    const data = await r.json();
+    if(data.error) return null;
+    return data;
+  } catch(e){ return null; }
+}
+
+async function saveToCloud(db){
+  if(!CLOUD.url||!CLOUD.secret) return false;
+  try {
+    const r = await fetch(CLOUD.url, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({secret:CLOUD.secret, db})
+    });
+    const data = await r.json();
+    return data.ok === true;
+  } catch(e){ return false; }
+}
+
+// ═══════════════════════════════════════════════════
+// 評価期間ヘルパー
+// ═══════════════════════════════════════════════════
+function genPeriods(){
+  const now=new Date();
+  const cur=now.getFullYear();
+  const opts=[];
+  // 2026年度から現在年度+2年まで（年1回評価）
+  const start=2026;
+  const end=Math.max(cur+2, start+4);
+  for(let y=end;y>=start;y--){
+    opts.push({v:y+'年度',l:y+'年度（'+y+'/4〜'+(y+1)+'/3）'});
+  }
+  return opts;
+}
+const PERIODS=genPeriods();
+
+// ═══════════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════════
+const HOSPITAL='納病院';
+const STORAGE='ryujinkai_v2';
+const ROLES={
+  sysadmin:{label:'システム管理者',chip:'role-sysadmin',short:'SYS'},
+  incho:   {label:'院長',          chip:'role-incho',   short:'院長'},
+  jimucho: {label:'事務長',        chip:'role-jimucho', short:'事務長'},
+  head:    {label:'所属長',        chip:'role-head',    short:'所属長'},
+  staff:   {label:'一般職員',      chip:'role-staff',   short:'職員'},
+};
+const CAN_SUPERVISE=['sysadmin','incho','jimucho','head'];
+const CAN_APPROVE1 =['sysadmin','jimucho','head'];
+const CAN_APPROVE2 =['sysadmin','jimucho'];
+const CAN_ALL_DEPTS=['sysadmin','incho','jimucho'];
+const CAN_MANAGE_USERS=['sysadmin','jimucho'];
+
+const SHOKUSHU=[
+  {id:'kango', label:'看護職（看護師・准看護師）', icon:'👩‍⚕️'},
+  {id:'kaigo', label:'介護職（介護福祉士・介護職員）', icon:'👵'},
+  {id:'jimu',  label:'事務職（医事・総務・受付等）', icon:'💼'},
+  {id:'senmon',label:'専門職（リハビリ・栄養・薬剤等）', icon:'🧠'},
+  {id:'other', label:'その他', icon:'👤'},
+];
+const FORM_STEPS=['基本情報','基本行動①','基本行動②','職務遂行','自己成長','目標管理','コメント','確認'];
+
+const KIHON=[
+  {id:'sincerity',  label:'誠実な行動',      training:'医療倫理とコンプライアンス再徹底',
+   bars:{10:'約束や期限を常に守り、ミスや遅れがあった際はすぐに報告・修正できる',5:'指示や期限を守るが、報告が遅れることがある',1:'指示・期限を守らないことがあり、再指示が必要になる'}},
+  {id:'listening',  label:'傾聴と共感',       training:'患者・同僚への傾聴力向上ワークショップ',
+   bars:{10:'相手の話を最後まで聴き、感情にも配慮した対応ができる',5:'話を聴く姿勢はあるが、相手の意図を確認することが少ない',1:'話を遮る、相手の意見を否定する態度が見られる'}},
+  {id:'cooperation',label:'協調とチームワーク',training:'多職種連携を円滑にする情報共有と依頼術',
+   bars:{10:'他部署・他職種と積極的に協力し、問題解決に貢献している',5:'必要な連携は行うが、他者支援は受け身的',1:'他部署や同僚との連携を避け、独善的に行動する'}},
+  {id:'responsibility',label:'責任感・主体性', training:'自律的行動と問題解決スキル',
+   bars:{10:'問題を自ら発見・報告・提案し、改善に取り組む',5:'指示された業務は責任をもって行う',1:'問題に気づいても放置・他者任せにする'}},
+  {id:'manners',    label:'接遇マナー',        training:'納病院の笑顔と安心感を与える接遇研修',
+   bars:{10:'常に笑顔・挨拶・丁寧な言葉遣いを実践し、患者・同僚に安心感を与える',5:'忙しい時に挨拶や声掛けが疎かになることがある',1:'無表情、無言対応、言葉が乱暴など不快感を与える'}},
+];
+const SHOKUMU={
+  kango:[
+    {label:'記録の正確性',  bars:{10:'記録が正確・簡潔で、観察事実が明確',5:'一部誤記があるが全体として問題なし',1:'記録漏れ・曖昧な表現が多い'}},
+    {label:'安全管理・感染対策',bars:{10:'ルールを遵守し、他者にも注意喚起できる',5:'ルールは守るが他者への意識づけは少ない',1:'手順違反や指摘が多い'}},
+    {label:'チーム貢献',    bars:{10:'会議・カンファレンスで積極的に意見・提案を行う',5:'出席はするが発言は少ない',1:'欠席・消極的態度が多い'}},
+  ],
+  kaigo:[
+    {label:'ケアの質',      bars:{10:'利用者の尊厳を守り、個別性に配慮した介護ができる',5:'基本的な介助はできるが、個別配慮が弱い',1:'一律対応・配慮不足が目立つ'}},
+    {label:'観察・報告',    bars:{10:'小さな変化にも気づき、即時に報告・共有できる',5:'変化に気づくが報告が遅れることがある',1:'状況変化を見逃すことが多い'}},
+    {label:'チーム連携',    bars:{10:'他職種と協力し、情報共有・相談が活発',5:'協力的だが、情報発信は少ない',1:'独断的・報連相不足が多い'}},
+  ],
+  jimu:[
+    {label:'正確性',        bars:{10:'入力・処理に誤りがなく、チェックも確実',5:'一部確認漏れや誤入力がある',1:'ミスが多く再確認が頻発'}},
+    {label:'対応力',        bars:{10:'来院者・職員に丁寧で柔軟な対応ができる',5:'基本的対応はできるが柔軟性に欠ける',1:'態度・言葉づかいに問題がある'}},
+    {label:'業務理解',      bars:{10:'業務全体を把握し、優先順位を考えて行動できる',5:'指示があれば実施できる',1:'手順や目的を理解せず作業している'}},
+  ],
+  senmon:[
+    {label:'専門知識・技術',bars:{10:'最新知識を活用し、根拠に基づいた実践ができる',5:'必要な知識は理解しているが活用が不十分',1:'専門的根拠に欠けた対応が多い'}},
+    {label:'計画・実施力',  bars:{10:'科学的根拠に基づいた計画を立て、的確に実行している',5:'計画立案はできるが継続評価が不足',1:'計画性がなく対応が場当たり的'}},
+    {label:'多職種連携',    bars:{10:'医師・看護師等と積極的に連携しチーム医療に貢献',5:'必要時のみ情報共有している',1:'他職種との連携が少なく孤立的'}},
+  ],
+  other:[
+    {label:'業務遂行の質',  bars:{10:'高い質で業務を遂行し、組織に貢献できる',5:'基本的な業務は問題なくこなせる',1:'業務の質に改善が必要な場面が多い'}},
+    {label:'報告・連絡・相談',bars:{10:'適切なタイミングで報告・連絡・相談ができる',5:'指示があれば対応するが自発的ではない',1:'報連相が不足し問題が放置されることがある'}},
+    {label:'改善への取り組み',bars:{10:'課題を発見し、改善提案と実行ができる',5:'指示された改善には取り組む',1:'現状維持にとどまり改善意識が低い'}},
+  ],
+};
+const SEICHOU=[
+  {label:'学習意欲',  bars:{10:'自主的に学び、職場へ還元している',5:'研修には参加するが活用は少ない',1:'研修・学習意欲が低い'}},
+  {label:'情報共有',  bars:{10:'学んだ内容を積極的に共有・提案できる',5:'共有依頼があれば対応',1:'学んだ内容を独り占めにしている'}},
+  {label:'自己管理',  bars:{10:'体調・感情のコントロールができ、安定した勤務',5:'一時的に感情が表に出る',1:'欠勤や感情的対応が多い'}},
+];
+const MOKUHYO_G=[
+  {g:'S',pts:38,label:'S（37〜40点）',desc:'目標管理において模範的成果を達成し、組織に大きく貢献した'},
+  {g:'A',pts:33,label:'A（30〜36点）',desc:'高い意欲をもって目標を達成し、期待以上の成果を出した'},
+  {g:'B',pts:26,label:'B（23〜29点）',desc:'概ね目標を達成し、組織の成長に貢献した'},
+  {g:'C',pts:19,label:'C（16〜22点）',desc:'目標達成に課題が残るが、プロセスの改善は見られる'},
+  {g:'D',pts:10,label:'D（15点以下）',desc:'目標達成に向けた取り組みに、大幅な改善が必要である'},
+];
+const GRADE_DEF=[
+  {g:'S',min:135,color:'#7F77DD',bg:'#EEEDFE',label:'S（模範的行動）'},
+  {g:'A',min:120,color:'#1D9E75',bg:'#E1F5EE',label:'A（安定して優秀）'},
+  {g:'B',min:90, color:'#378ADD',bg:'#E6F1FB',label:'B（概ね良好）'},
+  {g:'C',min:60, color:'#BA7517',bg:'#FAEEDA',label:'C（改善の余地あり）'},
+  {g:'D',min:0,  color:'#E24B4A',bg:'#FCEBEB',label:'D（大幅な改善が必要）'},
+];
+
+function calcSc(ans){
+  const kihon =(ans.kihon ||[]).reduce((a,b)=>a+(b||0),0);
+  const shokumu=(ans.shokumu||[]).reduce((a,b)=>a+(b||0),0);
+  const seichou=(ans.seichou||[]).reduce((a,b)=>a+(b||0),0);
+  const mokuhyo=ans.mokuhyo||0;
+  return{kihon,shokumu,seichou,mokuhyo,total:kihon+shokumu+seichou+mokuhyo};
+}
+function getG(total){return GRADE_DEF.find(g=>total>=g.min)||GRADE_DEF[4];}
+function initAns(){return{kihon:[0,0,0,0,0],shokumu:[0,0,0],seichou:[0,0,0],mokuhyo:0,growth_text:'',next_text:''};}
+
+// ═══════════════════════════════════════════════════
+// DB
+// ═══════════════════════════════════════════════════
+function loadDB(){
+  try{const s=localStorage.getItem(STORAGE);if(s)return JSON.parse(s);}catch(e){}
+  return{users:[],evaluations:[],goals:[],settings:{period:'',departments:[]}};
+}
+function saveDB(db){try{localStorage.setItem(STORAGE,JSON.stringify(db));}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5);}
+
+let DB=loadDB();
+
+// Seed default system admin
+(function seed(){
+  if(!DB.users.find(u=>u.role==='sysadmin')){
+    DB.users.push({id:'seed-sys',name:'システム管理者',dept:'事務局',shokushu:'jimu',role:'sysadmin',password:'admin1234',birthdate:'',created_at:Date.now()});
+    saveDB(DB);
+  }
+})();
+
+function save(){
+  saveDB(DB);
+  // Async sync to cloud
+  syncStatus='syncing';
+  updateSyncBadge();
+  saveToCloud(DB).then(ok=>{
+    syncStatus = ok ? 'synced' : (CLOUD.url ? 'error' : 'local');
+    updateSyncBadge();
+  });
+}
+
+function updateSyncBadge(){
+  const el=document.getElementById('sync-badge');
+  if(!el)return;
+  const map={
+    local:  {txt:'ローカル保存',  bg:'var(--bg3)',    c:'var(--text3)'},
+    syncing:{txt:'同期中…',       bg:'var(--blue-l)', c:'var(--blue-d)'},
+    synced: {txt:'☁ クラウド同期済', bg:'var(--teal-l)',c:'var(--teal-d)'},
+    error:  {txt:'⚠ 同期失敗',    bg:'var(--red-l)',  c:'var(--red)'},
+  };
+  const s=map[syncStatus]||map.local;
+  el.textContent=s.txt; el.style.background=s.bg; el.style.color=s.c;
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function h(tag,attrs,...kids){
+  attrs=attrs&&typeof attrs==='object'&&!(attrs instanceof Element)?attrs:{};
+  const el=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs)){
+    if(v===null||v===undefined||v===false)continue;
+    if(k==='class')el.className=v;
+    else if(k==='style'&&typeof v==='object')Object.assign(el.style,v);
+    else if(k.startsWith('on'))el.addEventListener(k.slice(2).toLowerCase(),v);
+    else el.setAttribute(k,v);
+  }
+  for(const c of kids.flat()){
+    if(c===null||c===undefined||c===false)continue;
+    el.appendChild(c instanceof Element?c:document.createTextNode(String(c)));
+  }
+  return el;
+}
+const div=(a,...c)=>h('div',a instanceof Element||typeof a==='string'?{}:a,...(a instanceof Element||typeof a==='string'?[a,...c]:c));
+const span=(cls,txt)=>h('span',{class:cls},txt);
+const btn=(cls,txt,cb)=>h('button',{class:'btn '+cls,onClick:cb},txt);
+
+function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit'});}
+function shLabel(id){return(SHOKUSHU.find(s=>s.id===id)||{label:id}).label;}
+function rLabel(role){return(ROLES[role]||{label:role}).label;}
+function rChip(role){const r=ROLES[role]||{label:role,chip:'role-staff'};return span('role-chip '+r.chip,r.label);}
+function stBadge(st){
+  const map={draft:'下書き',submitted:'提出済み',approved_1:'一次承認済',approved_2:'最終承認済',rejected:'差戻し'};
+  return span('badge status-'+st,map[st]||st);
+}
+function gBadge(g){return span('badge g'+g,g);}
+function gColor(g){return(GRADE_DEF.find(x=>x.g===g)||GRADE_DEF[4]).color;}
+function gBg(g){return(GRADE_DEF.find(x=>x.g===g)||GRADE_DEF[4]).bg;}
+
+// Dept staff count
+function deptCount(dept){return DB.users.filter(u=>u.dept===dept&&u.role==='staff').length;}
+function isSingleDept(dept){return deptCount(dept)===1;}
+
+// Who should do supervisor eval for a staff member
+function supervisorOf(staffUser){
+  // Find head of same dept
+  const head=DB.users.find(u=>u.dept===staffUser.dept&&u.role==='head');
+  if(head)return head;
+  // Single-person dept or no head → jimucho evaluates
+  const jimu=DB.users.find(u=>u.role==='jimucho');
+  return jimu||null;
+}
+
+// Can current user approve 1st stage for this eval
+function canApprove1(user,ev){
+  if(!CAN_APPROVE1.includes(user.role))return false;
+  if(user.role==='head')return ev.evaluatee_dept===user.dept;
+  return true;
+}
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let S={
+  screen:'login',user:null,page:'dashboard',
+  modal:null,toast:null,
+  form:null,        // current eval form data
+  splitSelf:null,   // self-eval shown in left pane of supervisor eval
+  evalEditId:null,
+};
+function set(u){Object.assign(S,u);render();}
+function toast(msg,type='ok'){
+  S.toast={msg,type};render();
+  setTimeout(()=>{S.toast=null;render();},3000);
+}
+
+// ═══════════════════════════════════════════════════
+// PRINT
+// ═══════════════════════════════════════════════════
+function printEval(evId){
+  const ev=DB.evaluations.find(e=>e.id===evId);if(!ev)return;
+  const sc=calcSc(ev.answers);const g=getG(sc.total);
+  const shQ=SHOKUMU[ev.evaluatee_shokushu]||SHOKUMU.other;
+  const low=KIHON.filter((k,i)=>(ev.answers.kihon[i]||0)===1).map(k=>k.training);
+  const typeLabel={self:'自己評価',supervisor:'上司評価（他者評価）'}[ev.type]||ev.type;
+  const win=window.open('','_print','width=900,height=700');
+  const css=`body{font-family:-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;font-size:11px;padding:20px;color:#000}
+    h1{font-size:16px;margin-bottom:4px}h2{font-size:13px;margin:12px 0 6px;border-bottom:1px solid #ccc;padding-bottom:3px}
+    .meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:#f5f5f5;padding:8px;border-radius:4px;margin-bottom:10px;font-size:11px}
+    .grade-box{font-size:36px;font-weight:700;color:${g.color};border:2px solid ${g.color};display:inline-block;padding:2px 16px;border-radius:4px}
+    .score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0}
+    .score-box{border:1px solid #ccc;padding:5px;border-radius:4px;text-align:center}
+    .q{margin-bottom:6px;padding:5px 7px;border:1px solid #eee;border-radius:3px;page-break-inside:avoid}
+    .q-lbl{font-weight:600;font-size:11px;margin-bottom:2px}
+    .q-ans{font-size:11px;color:#444;background:#f9f9f9;padding:2px 5px;border-radius:2px}
+    .comment{border:1px solid #ccc;min-height:36px;padding:5px;border-radius:3px;margin:3px 0;font-size:11px}
+    .sign-box{border:1px solid #999;height:36px;margin-top:3px}
+    .low{background:#fff3cd;padding:6px;border-radius:3px;font-size:10px;border:1px solid #f0ad4e;margin-bottom:8px}
+    @media print{@page{margin:12mm}}`;
+  const kRows=KIHON.map((k,i)=>{const v=ev.answers.kihon[i]||0;return`<div class="q"><div class="q-lbl">${k.label}</div><div class="q-ans">${v}点 — ${v?k.bars[v]:'未入力'}</div></div>`;}).join('');
+  const sRows=shQ.map((k,i)=>{const v=ev.answers.shokumu[i]||0;return`<div class="q"><div class="q-lbl">${k.label}</div><div class="q-ans">${v}点 — ${v?k.bars[v]:'未入力'}</div></div>`;}).join('');
+  const gRows=SEICHOU.map((k,i)=>{const v=ev.answers.seichou[i]||0;return`<div class="q"><div class="q-lbl">${k.label}</div><div class="q-ans">${v}点 — ${v?k.bars[v]:'未入力'}</div></div>`;}).join('');
+  const apv1=ev.approval_1?`${fmtDate(ev.approval_1.at)} ${ev.approval_1.by_name}`:'（未承認）';
+  const apv2=ev.approval_2?`${fmtDate(ev.approval_2.at)} ${ev.approval_2.by_name}`:'（未承認）';
+  win.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    <h1>医療法人隆仁会 ${HOSPITAL} — 職員評価シート【${typeLabel}】</h1>
+    <div class="meta">
+      <div><b>氏名：</b>${ev.evaluatee_name}</div><div><b>所属：</b>${ev.evaluatee_dept}</div><div><b>職種：</b>${shLabel(ev.evaluatee_shokushu)}</div>
+      <div><b>評価期間：</b>${ev.period||'—'}</div><div><b>評価者：</b>${ev.evaluator_name||'本人'}</div><div><b>提出日：</b>${fmtDate(ev.submitted_at)}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:10px">
+      <div><div style="font-size:10px;margin-bottom:2px">総合グレード</div><div class="grade-box">${g.g}</div><div style="font-size:10px;color:${g.color}">${g.label}</div></div>
+      <div style="flex:1">
+        <div class="score-grid">
+          ${[{l:'基本行動',v:sc.kihon,m:50},{l:'職務遂行',v:sc.shokumu,m:30},{l:'自己成長',v:sc.seichou,m:30},{l:'目標管理',v:sc.mokuhyo,m:40}].map(x=>`<div class="score-box"><div style="font-size:9px;color:#666">${x.l}</div><div style="font-size:16px;font-weight:600;color:${g.color}">${x.v}</div><div style="font-size:9px;color:#999">/${x.m}点</div></div>`).join('')}
+        </div>
+        <div style="font-size:14px;font-weight:600;color:${g.color}">合計 ${sc.total} / 150点</div>
+      </div>
+    </div>
+    ${low.length?`<div class="low"><b>📚 優先受講テーマ：</b>${low.join(' ／ ')}</div>`:''}
+    <h2>Ⅰ. 基本行動評価 50点満点</h2>${kRows}
+    <h2>Ⅱ. 職務遂行能力 30点満点</h2>${sRows}
+    <h2>Ⅲ. 自己成長・学習 30点満点</h2>${gRows}
+    <h2>Ⅳ. 目標管理 40点満点</h2>
+    <div class="q"><div class="q-lbl">目標達成点数</div><div class="q-ans">${ev.answers.mokuhyo||0}点 / 40点（グレード：${ev.answers.mokuhyo>=37?'S':ev.answers.mokuhyo>=30?'A':ev.answers.mokuhyo>=23?'B':ev.answers.mokuhyo>=16?'C':'D'}）</div></div>
+    <h2>Ⅴ. 振り返りコメント</h2>
+    <div style="font-size:10px;margin-bottom:2px"><b>成長を感じたこと：</b></div><div class="comment">${(ev.answers.growth_text||'').replace(/\n/g,'<br>')||'（記入なし）'}</div>
+    <div style="font-size:10px;margin:6px 0 2px"><b>今後の取り組み：</b></div><div class="comment">${(ev.answers.next_text||'').replace(/\n/g,'<br>')||'（記入なし）'}</div>
+    <h2>Ⅵ. 承認記録</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><div style="font-size:10px"><b>一次承認（所属長）：</b>${apv1}</div><div style="font-size:10px;margin-top:4px">コメント：${ev.approval_1?.comment||'—'}</div><div class="sign-box"></div></div>
+      <div><div style="font-size:10px"><b>二次承認（事務長）：</b>${apv2}</div><div style="font-size:10px;margin-top:4px">コメント：${ev.approval_2?.comment||'—'}</div><div class="sign-box"></div></div>
+    </div>
+    <script>window.onload=()=>{window.print();window.close();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+// ═══════════════════════════════════════════════════
+// CSV EXPORT
+// ═══════════════════════════════════════════════════
+function printBlankForm(shokushu){
+  const shQ=SHOKUMU[shokushu]||SHOKUMU.kango;
+  const shName=shLabel(shokushu);
+  const win=window.open('','_print','width=900,height=700');
+  const css=`
+    body{font-family:-apple-system,'Hiragino Kaku Gothic ProN',sans-serif;font-size:11px;padding:18px;color:#000;line-height:1.5}
+    h1{font-size:17px;margin-bottom:4px}h2{font-size:13px;margin:14px 0 7px;border-bottom:1.5px solid #333;padding-bottom:3px}h3{font-size:12px;margin:10px 0 5px}
+    .meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+    .field{border-bottom:1px solid #999;height:24px;margin-top:3px}
+    .field-lg{border-bottom:1px solid #999;height:20px;margin-top:3px;grid-column:span 2}
+    .q-block{border:1px solid #ccc;border-radius:3px;padding:7px 9px;margin-bottom:7px;page-break-inside:avoid}
+    .q-title{font-weight:600;font-size:11px;margin-bottom:6px}
+    .opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+    .opt{border:1px solid #ccc;border-radius:3px;padding:5px 7px;font-size:10px;display:flex;gap:5px;align-items:flex-start}
+    .opt-circle{width:12px;height:12px;border-radius:50%;border:1.5px solid #555;flex-shrink:0;margin-top:1px}
+    .opt-10 .opt-lbl{color:#0F6E56}.opt-5 .opt-lbl{color:#185FA5}.opt-1 .opt-lbl{color:#854F0B}
+    .comment-box{border:1px solid #ccc;min-height:50px;padding:5px;border-radius:3px;margin:4px 0;font-size:10px}
+    .score-input{border:1px solid #999;width:60px;height:28px;display:inline-block;vertical-align:middle;border-radius:3px;margin:0 4px}
+    .grade-ref{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:6px 0;font-size:10px;text-align:center}
+    .grade-box{padding:4px 2px;border-radius:3px;border:1px solid #ccc}
+    .sign-area{border:1px solid #999;height:40px;border-radius:3px;margin-top:4px}
+    .sign-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px}
+    @media print{@page{margin:12mm;size:A4}body{padding:8px}}
+  `;
+  function qBlock(label,bars){
+    return `<div class="q-block">
+      <div class="q-title">${label}</div>
+      <div class="opts">
+        <div class="opt opt-10"><div class="opt-circle"></div><div><div class="opt-lbl" style="font-size:10px;font-weight:600;color:#0F6E56">10点 — 非常に良い</div><div style="font-size:9px;color:#555">${bars[10]}</div></div></div>
+        <div class="opt opt-5"><div class="opt-circle"></div><div><div class="opt-lbl" style="font-size:10px;font-weight:600;color:#185FA5">5点 — 概ね良い</div><div style="font-size:9px;color:#555">${bars[5]}</div></div></div>
+        <div class="opt opt-1"><div class="opt-circle"></div><div><div class="opt-lbl" style="font-size:10px;font-weight:600;color:#854F0B">1点 — 改善必要</div><div style="font-size:9px;color:#555">${bars[1]}</div></div></div>
+      </div>
+    </div>`;
+  }
+  const kRows=KIHON.map(k=>qBlock(k.label,k.bars)).join('');
+  const sRows=shQ.map(k=>qBlock(k.label,k.bars)).join('');
+  const gRows=SEICHOU.map(k=>qBlock(k.label,k.bars)).join('');
+  win.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><style>${css}</style></head><body>
+    <h1>医療法人隆仁会 ${HOSPITAL}　職員自己評価シート</h1>
+    <div style="font-size:11px;color:#555;margin-bottom:10px">評価対象職種：${shName}　※各項目で該当するものに○をつけてください</div>
+    <div class="meta">
+      <div><div style="font-size:10px;color:#666">氏名</div><div class="field"></div></div>
+      <div><div style="font-size:10px;color:#666">所属</div><div class="field"></div></div>
+      <div><div style="font-size:10px;color:#666">評価対象期間</div><div class="field"></div></div>
+    </div>
+    <h2>Ⅰ. 基本行動評価（全職種共通）　50点満点</h2>
+    ${kRows}
+    <h2>Ⅱ. 職務遂行能力（${shName}）　30点満点</h2>
+    ${sRows}
+    <h2>Ⅲ. 自己成長・学習（全職種共通）　30点満点</h2>
+    ${gRows}
+    <h2>Ⅳ. 目標管理評価　40点満点</h2>
+    <div class="grade-ref">
+      ${[{g:'S',r:'37〜40',c:'#7F77DD'},{g:'A',r:'30〜36',c:'#1D9E75'},{g:'B',r:'23〜29',c:'#378ADD'},{g:'C',r:'16〜22',c:'#BA7517'},{g:'D',r:'0〜15',c:'#E24B4A'}].map(x=>`<div class="grade-box"><div style="font-size:14px;font-weight:700;color:${x.c}">${x.g}</div><div style="font-size:9px;color:${x.c}">${x.r}点</div></div>`).join('')}
+    </div>
+    <div style="margin:8px 0;font-size:11px">目標達成点数：<div class="score-input"></div>点　（0〜40点で記入）</div>
+    <h2>Ⅴ. 振り返りコメント</h2>
+    <div style="font-size:10px;font-weight:600;margin-bottom:3px">成長を感じたこと・取り組みの成果</div>
+    <div class="comment-box"></div>
+    <div style="font-size:10px;font-weight:600;margin:8px 0 3px">今後、特に取り組みたいこと</div>
+    <div class="comment-box"></div>
+    <h2>Ⅵ. 点数集計</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
+      <tr>
+        ${['基本行動（/50）','職務遂行（/30）','自己成長（/30）','目標管理（/40）','合計（/150）','グレード'].map(h=>`<th style="border:1px solid #999;padding:5px 8px;background:#f5f5f5;font-weight:600">${h}</th>`).join('')}
+      </tr>
+      <tr>
+        ${Array(6).fill('<td style="border:1px solid #999;padding:5px 8px;height:28px"></td>').join('')}
+      </tr>
+    </table>
+    <h2>Ⅶ. 承認記録</h2>
+    <div class="sign-grid">
+      <div><div style="font-size:10px;font-weight:600">本人提出日</div><div class="sign-area"></div></div>
+      <div><div style="font-size:10px;font-weight:600">一次承認（所属長）サイン・日付</div><div class="sign-area"></div></div>
+      <div><div style="font-size:10px;font-weight:600">二次承認（事務長）サイン・日付</div><div class="sign-area"></div></div>
+    </div>
+    <script>window.onload=()=>{window.print();window.close();}<\/script>
+  </body></html>`);
+  win.document.close();
+}
+
+function exportCSV(rows){
+  const hdr=[
+    '所属','氏名','職種','評価種別','評価期間',
+    '①誠実な行動','②傾聴と共感','③協調とチームワーク','④責任感・主体性','⑤接遇マナー',
+    '職務①','職務②','職務③',
+    '学習意欲','情報共有','自己管理',
+    '目標管理点数',
+    '基本行動合計/50','職務遂行合計/30','自己成長合計/30','目標管理/40','総合点数/150','グレード',
+    'ステータス','提出日','一次承認日','一次承認者','一次コメント','二次承認日','二次承認者','二次コメント',
+    '成長コメント','今後の取り組み'
+  ];
+  const stLabel={draft:'下書き',submitted:'提出済み',approved_1:'一次承認済',approved_2:'最終承認済',rejected:'差戻し'};
+  const data=rows.map(ev=>{
+    const sc=calcSc(ev.answers);const g=getG(sc.total);
+    const ans=ev.answers;
+    // get shokumu labels for this evaluatee
+    const shQ=SHOKUMU[ev.evaluatee_shokushu]||SHOKUMU.other;
+    return[
+      ev.evaluatee_dept,ev.evaluatee_name,shLabel(ev.evaluatee_shokushu),
+      ev.type==='self'?'自己評価':'上司評価',ev.period||'',
+      // kihon 5 items
+      ans.kihon[0]||0,ans.kihon[1]||0,ans.kihon[2]||0,ans.kihon[3]||0,ans.kihon[4]||0,
+      // shokumu 3 items
+      ans.shokumu[0]||0,ans.shokumu[1]||0,ans.shokumu[2]||0,
+      // seichou 3 items
+      ans.seichou[0]||0,ans.seichou[1]||0,ans.seichou[2]||0,
+      // mokuhyo direct score
+      ans.mokuhyo||0,
+      // totals
+      sc.kihon,sc.shokumu,sc.seichou,sc.mokuhyo,sc.total,g.g,
+      stLabel[ev.status]||ev.status,
+      fmtDate(ev.submitted_at),
+      fmtDate(ev.approval_1?.at),ev.approval_1?.by_name||'',ev.approval_1?.comment||'',
+      fmtDate(ev.approval_2?.at),ev.approval_2?.by_name||'',ev.approval_2?.comment||'',
+      (ans.growth_text||'').replace(/\n/g,' '),
+      (ans.next_text||'').replace(/\n/g,' '),
+    ];
+  });
+  const csv=[hdr,...data].map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`${HOSPITAL}_人事評価_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast('CSVをエクスポートしました');
+}
+
+// ═══════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════
+function renderLogin(){
+  return h('div',{id:'login-wrap'},
+    h('div',{class:'login-box'},
+      h('div',{style:{textAlign:'center',marginBottom:'1.4rem'}},
+        h('div',{style:{fontSize:'16px',fontWeight:'500',color:' var(--teal-d)'}},'医療法人隆仁会 '+HOSPITAL),
+        h('div',{style:{fontSize:'11px',color:'var(--text3)',marginTop:'2px'}},'人事評価・人材育成システム'),
+        h('div',{style:{fontSize:'11px',color:'var(--teal)',marginTop:'3px'}},'誠実 · 傾聴 · 協調')
+      ),
+      h('div',{style:{display:'grid',gap:'10px'}},
+        (() => {
+          let name='',pw='';
+          const nameIn=h('input',{type:'text',placeholder:'氏名を入力',onInput(e){name=e.target.value;}});
+          const pwIn=h('input',{type:'password',placeholder:'パスワードを入力',onInput(e){pw=e.target.value;}});
+          const errEl=h('div',{style:{fontSize:'12px',color:'var(--red)',display:'none',padding:'6px 8px',background:'var(--red-l)',borderRadius:'6px'}});
+          const loginBtn=h('button',{class:'btn btn-primary',style:{width:'100%',marginTop:'4px'},
+            onClick(){
+              const u=DB.users.find(x=>x.name===name.trim()&&x.password===pw);
+              if(!u){errEl.textContent='氏名またはパスワードが正しくありません';errEl.style.display='block';return;}
+              errEl.style.display='none';
+              set({screen:'app',user:u,page:'dashboard',form:null,splitSelf:null});
+            }
+          },'ログイン');
+          return [
+            h('div',{},h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'氏名'),nameIn),
+            h('div',{},h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'パスワード'),pwIn),
+            errEl,loginBtn,
+          ];
+        })()
+      ),
+
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════
+function renderSidebar(){
+  const u=S.user;const isAdmin=CAN_ALL_DEPTS.includes(u.role)||u.role==='head';
+  const nav1=[
+    {id:'dashboard',icon:'◉',l:'ダッシュボード'},
+    {id:'self-eval',icon:'✎',l:'自己評価入力'},
+    ...(CAN_SUPERVISE.includes(u.role)?[{id:'sup-eval',icon:'👥',l:'上司評価（他者評価）'}]:[]),
+    {id:'history',icon:'◷',l:'評価履歴・目標'},
+  ];
+  const nav2=isAdmin?[
+    {id:'admin-approvals',icon:'✔',l:'承認管理'},
+    {id:'admin-dashboard',icon:'⊞',l:'集計・分析'},
+    {id:'admin-export',icon:'↓',l:'エクスポート'},
+    ...(CAN_MANAGE_USERS.includes(u.role)?[{id:'admin-users',icon:'👤',l:'ユーザー管理'}]:[]),
+  ]:[];
+  return h('div',{id:'sidebar'},
+    h('div',{id:'sidebar-hd'},
+      h('div',{style:{fontSize:'11px',fontWeight:'500',color:'var(--teal-d)'}},'医療法人隆仁会'),
+      h('div',{style:{fontSize:'11px',fontWeight:'500',color:'var(--teal-d)',marginBottom:'6px'}},HOSPITAL),
+      h('div',{style:{background:'var(--teal-l)',borderRadius:'6px',padding:'7px 9px'}},
+        h('div',{style:{fontSize:'12px',fontWeight:'500'}},u.name),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'4px',marginTop:'2px'}},
+          h('div',{style:{fontSize:'10px',color:'var(--text3)'}}),u.dept,
+          rChip(u.role)
+        )
+      )
+    ),
+    ...nav1.map(n=>h('button',{class:'nav-i'+(S.page===n.id?' on':''),onClick(){set({page:n.id,form:null,splitSelf:null});}},n.icon,' ',n.l)),
+    nav2.length>0&&h('div',{class:'nav-sep'}),
+    ...nav2.map(n=>h('button',{class:'nav-i'+(S.page===n.id?' on':''),onClick(){set({page:n.id});}},n.icon,' ',n.l)),
+    h('div',{class:'nav-sep'}),
+    h('button',{class:'nav-i'+(S.page==='change-pw'?' on':''),onClick(){set({page:'change-pw'});}},
+      '🔑 パスワード変更'
+    ),
+    h('div',{style:{flex:'1'}}),
+    h('button',{class:'nav-i',style:{color:'var(--text3)',marginTop:'8px'},onClick(){set({screen:'login',user:null,page:'dashboard'});}},
+      '← ログアウト'
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard(){
+  const u=S.user;
+  const myEvals=DB.evaluations.filter(e=>e.evaluatee_id===u.id);
+  const latest=myEvals.filter(e=>e.type==='self').sort((a,b)=>b.submitted_at-a.submitted_at)[0];
+  const sc=latest?calcSc(latest.answers):null;
+  const g=sc?getG(sc.total):null;
+
+  const els=[];
+  // My latest score
+  if(latest&&sc&&g){
+    els.push(h('div',{class:'grade-card mb16',style:{borderColor:g.color,background:g.bg}},
+      h('div',{style:{textAlign:'center'}},
+        h('div',{style:{fontSize:'10px',color:g.color,marginBottom:'2px'}},'最新自己評価'),
+        h('div',{class:'grade-big',style:{color:g.color}},g.g),
+        h('div',{style:{fontSize:'12px',color:g.color}},`${sc.total}/150点`)
+      ),
+      h('div',null,
+        h('div',{style:{fontWeight:'500',fontSize:'13px',color:g.color,marginBottom:'6px'}},g.label),
+        h('div',{class:'g4',style:{marginBottom:'8px'}},
+          ...[{l:'基本',v:sc.kihon,m:50},{l:'職務',v:sc.shokumu,m:30},{l:'成長',v:sc.seichou,m:30},{l:'目標',v:sc.mokuhyo,m:40}].map(x=>
+            h('div',{style:{textAlign:'center',background:'rgba(255,255,255,.6)',borderRadius:'5px',padding:'4px 2px'}},
+              h('div',{style:{fontSize:'9px',color:g.color}},x.l),
+              h('div',{style:{fontSize:'13px',fontWeight:'500',color:g.color}},`${x.v}/${x.m}`)
+            )
+          )
+        ),
+        h('div',{class:'flex gap8'},
+          btn('btn-secondary btn-sm no-print','🖨 印刷',()=>printEval(latest.id)),
+          latest.status==='submitted'&&btn('btn-secondary btn-sm no-print','修正する',()=>set({page:'self-eval',form:{step:0,answers:JSON.parse(JSON.stringify(latest.answers)),profile:{period:latest.period,shokushu:latest.evaluatee_shokushu}},evalEditId:latest.id}))
+        )
+      )
+    ));
+  } else {
+    els.push(h('div',{class:'card mb16',style:{textAlign:'center',padding:'24px',borderStyle:'dashed',borderColor:'var(--teal)'}},
+      h('div',{style:{color:'var(--text2)',marginBottom:'10px'}},'まだ自己評価が提出されていません'),
+      btn('btn-primary','自己評価を始める →',()=>set({page:'self-eval',form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null}))
+    ));
+  }
+
+  // Pending supervisor eval for heads/jimucho
+  if(CAN_SUPERVISE.includes(u.role)){
+    const myDept=u.role==='head'?u.dept:null;
+    const targets=myDept
+      ? DB.users.filter(x=>x.dept===myDept&&x.role==='staff')
+      : DB.users.filter(x=>isSingleDept(x.dept)&&x.role==='staff');
+    const pending=targets.filter(t=>{
+      const selfEv=DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='self'&&e.status!=='draft');
+      const supEv =DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='supervisor');
+      return selfEv&&!supEv;
+    });
+    if(pending.length>0){
+      els.push(h('div',{class:'card mb16',style:{borderColor:'var(--amber)',background:'var(--amber-l)'}},
+        h('div',{style:{fontSize:'13px',fontWeight:'500',color:'var(--amber-d)',marginBottom:'8px'}},`上司評価が未実施です（${pending.length}名）`),
+        ...pending.map(t=>h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'6px 0',borderBottom:'0.5px solid rgba(186,117,23,.2)'}},
+          h('div',null,
+            h('span',{style:{fontWeight:'500',fontSize:'13px'}},t.name),
+            h('span',{class:'muted',style:{marginLeft:'6px'}},t.dept)
+          ),
+          btn('btn-sm',{class:'btn btn-primary btn-sm'},'評価を開始',()=>{
+            const selfEv=DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='self'&&e.status!=='draft');
+            set({page:'sup-eval',splitSelf:selfEv,form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:t.shokushu},targetUser:t},evalEditId:null});
+          })
+        ))
+      ));
+    }
+  }
+
+  // Approval pending
+  if(CAN_APPROVE1.includes(u.role)||CAN_APPROVE2.includes(u.role)){
+    const ap1=CAN_APPROVE1.includes(u.role)?DB.evaluations.filter(e=>e.status==='submitted'&&(u.role!=='head'||e.evaluatee_dept===u.dept)):[];
+    const ap2=CAN_APPROVE2.includes(u.role)?DB.evaluations.filter(e=>e.status==='approved_1'):[];
+    if(ap1.length>0||ap2.length>0){
+      els.push(h('div',{class:'card mb16'},
+        h('div',{class:'fb mb8'},
+          h('h3',null,'承認待ち'),
+          btn('btn-secondary btn-sm no-print','承認管理へ',()=>set({page:'admin-approvals'}))
+        ),
+        ap1.length>0&&h('div',{style:{fontSize:'12px',color:'var(--blue-d)',marginBottom:'4px'}},`一次承認待ち: ${ap1.length}件`),
+        ap2.length>0&&h('div',{style:{fontSize:'12px',color:'var(--amber-d)'}},`二次承認待ち: ${ap2.length}件`)
+      ));
+    }
+  }
+
+  // Eval cycle
+  els.push(h('div',{class:'card'},
+    h('h3',{style:{marginBottom:'12px'}},'評価サイクル'),
+    h('div',{class:'g4'},
+      ...[{m:'4月',s:'①目標設定',d:'行動目標を面談で設定'},{m:'8月',s:'②中間面談',d:'進捗確認・研修計画'},{m:'2月',s:'③評価振り返り',d:'自己評価＋上司評価'},{m:'3月',s:'④育成計画反映',d:'研修・OJT計画へ反映'}].map(c=>
+        h('div',{style:{textAlign:'center',padding:'9px 6px',background:'var(--bg2)',borderRadius:'7px'}},
+          h('div',{style:{fontSize:'11px',fontWeight:'500',color:'var(--teal)',marginBottom:'1px'}},c.m),
+          h('div',{style:{fontSize:'11px',fontWeight:'500',marginBottom:'2px'}},c.s),
+          h('div',{class:'muted',style:{lineHeight:'1.4',fontSize:'10px'}},c.d)
+        )
+      )
+    )
+  ));
+  return h('div',{id:'content'},...els);
+}
+
+// ═══════════════════════════════════════════════════
+// EVAL FORM (shared for self and supervisor)
+// ═══════════════════════════════════════════════════
+function barsBlock(items,vals,setter){
+  return items.map((item,i)=>{
+    const v=vals[i]||0;
+    const opts=[{v:10,sel:'sel10',lcl:'lbl10',lbl:'10点 — 非常に良い'},{v:5,sel:'sel5',lcl:'lbl5',lbl:'5点 — 概ね良い'},{v:1,sel:'sel1',lcl:'lbl1',lbl:'1点 — 改善必要'}];
+    return h('div',{class:'bars-q'},
+      h('div',{class:'bars-title'},h('span',{style:{color:'var(--text3)',fontSize:'11px',marginRight:'4px'}},`${i+1}.`),item.label),
+      h('div',{class:'bars-opts'},
+        ...opts.map(o=>h('button',{
+          class:'bars-opt '+(v===o.v?o.sel:''),
+          onClick(){setter(i,o.v);}
+        },
+          h('div',{class:'radio'}),
+          h('div',null,
+            h('div',{class:'opt-lbl '+(v===o.v?o.lcl:'')},o.lbl),
+            h('div',{class:'opt-desc'},item.bars[o.v])
+          )
+        ))
+      )
+    );
+  });
+}
+
+function renderEvalForm(isSup){
+  const u=S.user;
+  const fd=S.form;
+  if(!fd){
+    const defForm={step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}};
+    S.form=defForm;render();return h('div',null);
+  }
+  const{step,answers,profile}=fd;
+  const shQ=SHOKUMU[profile.shokushu]||SHOKUMU.other;
+
+  function upd(ch){Object.assign(S.form,ch);render();}
+  function setK(i,v){const k=[...answers.kihon];k[i]=v;upd({answers:{...answers,kihon:k}});}
+  function setS(i,v){const k=[...answers.shokumu];k[i]=v;upd({answers:{...answers,shokumu:k}});}
+  function setG(i,v){const k=[...answers.seichou];k[i]=v;upd({answers:{...answers,seichou:k}});}
+
+  function stepOk(){
+    if(step===0)return!!profile.period?.trim();
+    if(step===1)return answers.kihon.slice(0,3).every(v=>v>0);
+    if(step===2)return answers.kihon.slice(3).every(v=>v>0);
+    if(step===3)return answers.shokumu.every(v=>v>0);
+    if(step===4)return answers.seichou.every(v=>v>0);
+    if(step===5)return true; // 0点も有効
+    return true;
+  }
+  const allOk=[...answers.kihon,...answers.shokumu,...answers.seichou].every(v=>v>0)&&answers.mokuhyo!==null&&answers.mokuhyo!==undefined&&profile.period?.trim();
+  const sc=calcSc(answers);const g=getG(sc.total);
+  const low=KIHON.filter((k,i)=>answers.kihon[i]===1).map(k=>k.training);
+
+  const prog=h('div',{class:'fprog'},...FORM_STEPS.map((_,i)=>h('div',{class:'fprog-s'+(i<step?' done':i===step?' now':'')})));
+  const navRow=h('div',{class:'fb',style:{marginTop:'16px',gap:'10px'}},
+    step>0?btn('btn-secondary','← 戻る',()=>upd({step:step-1})):h('span',null),
+    step<FORM_STEPS.length-1
+      ?h('button',{class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
+      :h('button',{class:'btn btn-primary',disabled:!allOk,onClick(){
+          if(!allOk)return;
+          const sc2=calcSc(answers);const g2=getG(sc2.total);
+          const targetUser=fd.targetUser||u;
+          const ev={
+            id:S.evalEditId||uid(),
+            type:isSup?'supervisor':'self',
+            evaluatee_id:targetUser.id,
+            evaluatee_name:targetUser.name,
+            evaluatee_dept:targetUser.dept,
+            evaluatee_shokushu:profile.shokushu||targetUser.shokushu,
+            evaluator_id:u.id,
+            evaluator_name:u.name,
+            evaluator_role:u.role,
+            period:profile.period,
+            answers:{...answers},
+            grade:g2.g,
+            status:'submitted',
+            submitted_at:Date.now(),
+            approval_1:null,approval_2:null,
+            created_at:Date.now(),
+          };
+          const idx=DB.evaluations.findIndex(e=>e.id===ev.id);
+          if(idx>=0)DB.evaluations[idx]=ev;else DB.evaluations.push(ev);
+          save();
+          set({page:'history',form:null,evalEditId:null,splitSelf:null});
+          toast(isSup?`${targetUser.name}さんの上司評価を提出しました`:'自己評価を提出しました');
+        }},allOk?'提出する':'未入力があります')
+  );
+
+  const stepsLbl={0:'基本情報',1:'基本行動 1/2',2:'基本行動 2/2',3:`職務遂行（${shLabel(profile.shokushu)}）`,4:'自己成長・学習',5:'目標管理',6:'振り返りコメント',7:'確認'};
+  const subLbl={0:'評価期間を確認',1:'誠実・傾聴・協調 各10/5/1点',2:'責任感・接遇マナー 各10/5/1点',3:'職種別 30点満点',4:'全職種共通 30点満点',5:'40点満点',6:'任意記入',7:'内容を確認して提出'};
+
+  let body;
+  if(step===0){
+    body=h('div',null,
+      isSup&&h('div',{style:{background:'var(--blue-l)',borderRadius:'7px',padding:'8px 12px',marginBottom:'12px',fontSize:'12px',color:'var(--blue-d)'}},
+        `評価対象者：${fd.targetUser?.name||'—'} / ${fd.targetUser?.dept||'—'} / ${shLabel(fd.targetUser?.shokushu||'')}`
+      ),
+      h('div',{class:'g2',style:{marginBottom:'12px'}},
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'評価対象期間'),
+          h('select',{value:profile.period,onChange(e){upd({profile:{...profile,period:e.target.value}});}},
+            h('option',{value:''},'— 選択してください —'),
+            ...PERIODS.map(p=>h('option',{value:p.v,selected:p.v===profile.period},p.l))
+          )
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'職種'),
+          h('select',{value:profile.shokushu,onChange(e){upd({profile:{...profile,shokushu:e.target.value}});}},
+            ...SHOKUSHU.map(s=>h('option',{value:s.id,selected:s.id===profile.shokushu},s.icon+' '+s.label))
+          )
+        )
+      ),
+      !isSup&&h('div',{style:{background:'var(--teal-l)',borderRadius:'7px',padding:'8px 12px',fontSize:'12px',color:'var(--teal-d)',lineHeight:'1.6'}},
+        '人事評価は「査定」ではなく「育成の機会」です。誠実・傾聴・協調を行動の基盤として正直に自己評価してください。'
+      ),
+      navRow
+    );
+  } else if(step===1){body=h('div',null,...barsBlock(KIHON.slice(0,3),answers.kihon,(i,v)=>setK(i,v)),navRow);}
+  else if(step===2){body=h('div',null,...barsBlock(KIHON.slice(3),answers.kihon.slice(3),(i,v)=>setK(3+i,v)),navRow);}
+  else if(step===3){body=h('div',null,...barsBlock(shQ,answers.shokumu,setS),navRow);}
+  else if(step===4){body=h('div',null,...barsBlock(SEICHOU,answers.seichou,setG),navRow);}
+  else if(step===5){
+    const pts=answers.mokuhyo||0;
+    const gRef=[{g:'S',r:'37〜40',c:'#7F77DD',bg:'#EEEDFE'},{g:'A',r:'30〜36',c:'#1D9E75',bg:'#E1F5EE'},{g:'B',r:'23〜29',c:'#378ADD',bg:'#E6F1FB'},{g:'C',r:'16〜22',c:'#BA7517',bg:'#FAEEDA'},{g:'D',r:'0〜15',c:'#E24B4A',bg:'#FCEBEB'}];
+    const g2=gRef.find(x=>pts>=(x.r.split('〜')[0]==='0'?0:parseInt(x.r)))||gRef[4];
+    // Correct grade calc
+    const gg=pts>=37?gRef[0]:pts>=30?gRef[1]:pts>=23?gRef[2]:pts>=16?gRef[3]:gRef[4];
+    body=h('div',null,
+      h('p',{style:{fontSize:'12px',color:'var(--text2)',marginBottom:'12px',lineHeight:'1.6'}},'評価期間中の目標達成度を0〜40点で直接入力してください。'),
+      h('div',{style:{background:'var(--bg2)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px'}},
+        h('div',{style:{fontSize:'11px',fontWeight:'500',color:'var(--text2)',marginBottom:'7px'}},'点数の目安'),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:'5px',textAlign:'center'}},
+          ...gRef.map(x=>h('div',{style:{background:x.bg,borderRadius:'6px',padding:'6px 3px'}},
+            h('div',{style:{fontSize:'14px',fontWeight:'700',color:x.c}},x.g),
+            h('div',{style:{fontSize:'9px',color:x.c,marginTop:'1px'}},x.r+'点')
+          ))
+        )
+      ),
+      h('div',{style:{marginBottom:'14px'}},
+        h('label',{style:{fontSize:'13px',fontWeight:'500',display:'block',marginBottom:'10px'}},'目標達成点数（0〜40点）'),
+        h('div',{style:{display:'flex',alignItems:'center',gap:'12px',marginBottom:'10px'}},
+          h('input',{type:'range',min:'0',max:'40',step:'1',value:pts,id:'m-slider',style:{flex:'1',accentColor:'#7F77DD'},
+            onInput(e){
+              const v=parseInt(e.target.value)||0;
+              const ni=document.getElementById('m-num');if(ni)ni.value=v;
+              upd({answers:{...answers,mokuhyo:v}});
+            }
+          }),
+          h('input',{type:'number',min:'0',max:'40',step:'1',value:pts,id:'m-num',style:{width:'74px',fontSize:'20px',fontWeight:'700',textAlign:'center',padding:'6px 4px',color:'#7F77DD',border:'1.5px solid #7F77DD',borderRadius:'7px'},
+            onInput(e){
+              let v=parseInt(e.target.value);
+              if(isNaN(v)||v<0)v=0;if(v>40)v=40;
+              e.target.value=v;
+              const sl=document.getElementById('m-slider');if(sl)sl.value=v;
+              upd({answers:{...answers,mokuhyo:v}});
+            }
+          }),
+          h('span',{style:{fontSize:'13px',color:'var(--text3)'}},'/ 40点')
+        )
+      ),
+      h('div',{style:{background:gg.bg,border:`1.5px solid ${gg.c}`,borderRadius:'8px',padding:'10px 14px',display:'flex',alignItems:'center',gap:'16px'}},
+        h('div',{style:{textAlign:'center',minWidth:'50px'}},
+          h('div',{style:{fontSize:'32px',fontWeight:'700',color:gg.c}},gg.g),
+          h('div',{style:{fontSize:'10px',color:gg.c}},'評価グレード')
+        ),
+        h('div',null,
+          h('div',{style:{fontSize:'18px',fontWeight:'600',color:gg.c}},`${pts}点 / 40点`),
+          h('div',{style:{fontSize:'11px',color:gg.c,marginTop:'2px'}},gRef.find(x=>x.g===gg.g)?.r+'点の範囲')
+        )
+      ),
+      navRow
+    );
+  } else if(step===6){
+    body=h('div',null,
+      h('div',{style:{marginBottom:'11px'}},
+        h('label',{style:{fontSize:'12px',fontWeight:'500',display:'block',marginBottom:'5px'}},'成長を感じたこと・取り組みの成果'),
+        h('textarea',{onInput(e){upd({answers:{...answers,growth_text:e.target.value}});}},answers.growth_text)
+      ),
+      h('div',null,
+        h('label',{style:{fontSize:'12px',fontWeight:'500',display:'block',marginBottom:'5px'}},'今後、特に取り組みたいこと'),
+        h('textarea',{onInput(e){upd({answers:{...answers,next_text:e.target.value}});}},answers.next_text)
+      ),navRow
+    );
+  } else {
+    body=h('div',null,
+      h('div',{style:{background:g.bg,border:`1.5px solid ${g.color}`,borderRadius:'8px',padding:'11px 14px',marginBottom:'11px',display:'flex',alignItems:'center',gap:'14px'}},
+        h('div',{style:{textAlign:'center',minWidth:'60px'}},
+          h('div',{class:'grade-big',style:{color:g.color,fontSize:'34px'}},g.g),
+          h('div',{style:{fontSize:'10px',color:g.color}},g.label)
+        ),
+        h('div',{style:{flex:'1'}},
+          h('div',{class:'g4',style:{marginBottom:'5px'}},
+            ...[{l:'基本行動',v:sc.kihon,m:50},{l:'職務遂行',v:sc.shokumu,m:30},{l:'自己成長',v:sc.seichou,m:30},{l:'目標管理',v:sc.mokuhyo,m:40}].map(x=>
+              h('div',{style:{textAlign:'center',background:'rgba(255,255,255,.65)',borderRadius:'5px',padding:'4px 2px'}},
+                h('div',{style:{fontSize:'9px',color:g.color}},x.l),
+                h('div',{style:{fontSize:'13px',fontWeight:'500',color:g.color}},`${x.v}/${x.m}`)
+              )
+            )
+          ),
+          h('div',{style:{fontSize:'14px',fontWeight:'600',color:g.color}},`合計 ${sc.total} / 150点`)
+        )
+      ),
+      low.length>0&&h('div',{style:{background:'var(--amber-l)',border:'0.5px solid var(--amber)',borderRadius:'7px',padding:'7px 10px',marginBottom:'10px',fontSize:'11px',color:'var(--amber-d)'}},
+        h('b',null,'📚 優先受講テーマ：'),low.join(' ／ ')
+      ),
+      ...KIHON.map((k,i)=>h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',padding:'4px 0',borderBottom:'0.5px solid var(--border)'}},
+        h('span',{style:{color:'var(--text2)'}},k.label),
+        h('span',{style:{fontWeight:'500',color:answers.kihon[i]===10?'#1D9E75':answers.kihon[i]===5?'#378ADD':answers.kihon[i]===1?'#BA7517':'var(--text3)'}},
+          answers.kihon[i]?`${answers.kihon[i]}点`:'未入力')
+      )),
+      navRow
+    );
+  }
+
+  return h('div',{class:'card'},
+    prog,
+    h('div',{style:{marginBottom:'12px'}},
+      h('h3',{style:{marginBottom:'2px'}},stepsLbl[step]||''),
+      h('div',{class:'muted'},subLbl[step]||'')
+    ),
+    body
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// SUPERVISOR EVAL — SPLIT PANE
+// ═══════════════════════════════════════════════════
+function renderSelfReadonly(ev){
+  if(!ev)return h('div',{style:{textAlign:'center',padding:'24px',color:'var(--text3)',fontSize:'13px'}},'自己評価が提出されていません');
+  const sc=calcSc(ev.answers);const g=getG(sc.total);
+  const shQ=SHOKUMU[ev.evaluatee_shokushu]||SHOKUMU.other;
+  return h('div',null,
+    h('div',{style:{background:g.bg,borderRadius:'8px',padding:'10px 12px',marginBottom:'12px',border:`1.5px solid ${g.color}`}},
+      h('div',{style:{fontSize:'11px',color:g.color,fontWeight:'500',marginBottom:'2px'}},'自己評価スコア'),
+      h('div',{style:{fontSize:'24px',fontWeight:'700',color:g.color}},`${g.g} — ${sc.total}/150点`),
+      h('div',{class:'g4',style:{marginTop:'6px'}},
+        ...[{l:'基本',v:sc.kihon,m:50},{l:'職務',v:sc.shokumu,m:30},{l:'成長',v:sc.seichou,m:30},{l:'目標',v:sc.mokuhyo,m:40}].map(x=>
+          h('div',{style:{textAlign:'center',background:'rgba(255,255,255,.5)',borderRadius:'5px',padding:'3px'}},
+            h('div',{style:{fontSize:'9px',color:g.color}},x.l),
+            h('div',{style:{fontSize:'12px',fontWeight:'500',color:g.color}},`${x.v}/${x.m}`)
+          )
+        )
+      )
+    ),
+    h('h4',{style:{marginBottom:'8px',color:'var(--text2)'}},'基本行動評価'),
+    ...KIHON.map((k,i)=>{
+      const v=ev.answers.kihon[i]||0;
+      const vc=v===10?'var(--teal-d)':v===5?'var(--blue-d)':v===1?'var(--amber-d)':'var(--text3)';
+      return h('div',{class:'self-ans-item'},
+        h('span',{style:{color:'var(--text2)',fontSize:'11px',lineHeight:'1.4',flex:'1'}},k.label),
+        h('span',{class:'self-ans-v',style:{color:vc}},v?`${v}点`:'—')
+      );
+    }),
+    h('h4',{style:{margin:'10px 0 8px',color:'var(--text2)'}},'職務遂行能力'),
+    ...shQ.map((k,i)=>{
+      const v=ev.answers.shokumu[i]||0;
+      const vc=v===10?'var(--teal-d)':v===5?'var(--blue-d)':v===1?'var(--amber-d)':'var(--text3)';
+      return h('div',{class:'self-ans-item'},
+        h('span',{style:{color:'var(--text2)',fontSize:'11px',flex:'1'}},k.label),
+        h('span',{class:'self-ans-v',style:{color:vc}},v?`${v}点`:'—')
+      );
+    }),
+    h('h4',{style:{margin:'10px 0 8px',color:'var(--text2)'}},'自己成長・学習'),
+    ...SEICHOU.map((k,i)=>{
+      const v=ev.answers.seichou[i]||0;
+      const vc=v===10?'var(--teal-d)':v===5?'var(--blue-d)':v===1?'var(--amber-d)':'var(--text3)';
+      return h('div',{class:'self-ans-item'},
+        h('span',{style:{color:'var(--text2)',fontSize:'11px',flex:'1'}},k.label),
+        h('span',{class:'self-ans-v',style:{color:vc}},v?`${v}点`:'—')
+      );
+    }),
+    ev.answers.growth_text&&h('div',{style:{marginTop:'10px',padding:'7px 9px',background:'var(--bg3)',borderRadius:'6px'}},
+      h('div',{style:{fontSize:'10px',color:'var(--text3)',marginBottom:'2px'}},'成長コメント'),
+      h('div',{style:{fontSize:'11px',lineHeight:'1.5',color:'var(--text2)'}},ev.answers.growth_text)
+    )
+  );
+}
+
+function renderSupEval(){
+  if(!S.form){
+    // Show selection screen
+    const u=S.user;
+    const candidates=u.role==='head'
+      ? DB.users.filter(x=>x.dept===u.dept&&x.role==='staff')
+      : DB.users.filter(x=>x.id!==u.id&&['staff','head'].includes(x.role));
+
+    return h('div',{id:'content'},
+      h('div',{class:'card'},
+        h('div',{style:{marginBottom:'14px'}},
+          h('h3',{style:{marginBottom:'3px'}},'上司評価（他者評価）'),
+          h('div',{class:'muted'},'評価する職員を選択してください')
+        ),
+        candidates.length===0
+          ? h('div',{style:{textAlign:'center',padding:'24px',color:'var(--text3)'}},'評価対象の職員が登録されていません')
+          : h('div',{style:{display:'grid',gap:'8px'}},
+              ...candidates.map(t=>{
+                const selfEv=DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='self'&&e.status!=='draft');
+                const supEv =DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='supervisor');
+                return h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 13px',border:'0.5px solid var(--border)',borderRadius:'8px',background:'var(--bg)'}},
+                  h('div',null,
+                    h('span',{style:{fontWeight:'500',fontSize:'13px'}},t.name),rChip(t.role),
+                    h('div',{class:'muted',style:{marginTop:'1px'}},t.dept+' / '+shLabel(t.shokushu))
+                  ),
+                  h('div',{class:'flex gap8'},
+                    selfEv?h('span',{class:'badge status-submitted'},'自己評価済み'):h('span',{class:'badge status-draft'},'自己評価なし'),
+                    supEv?h('span',{class:'badge status-approved_1'},'上司評価済み')
+                      :btn('btn-primary btn-sm','評価を開始',()=>{
+                        set({page:'sup-eval',splitSelf:selfEv||null,
+                          form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:t.shokushu},targetUser:t},
+                          evalEditId:null});
+                      })
+                  )
+                );
+              })
+            )
+      )
+    );
+  }
+
+  // Split pane eval
+  const selfEv=S.splitSelf;
+  const targetUser=S.form.targetUser;
+  const formEl=renderEvalForm(true);
+
+  return h('div',{id:'content',style:{maxWidth:'100%',padding:'0',height:'100%',display:'flex',flexDirection:'column'}},
+    h('div',{style:{padding:'10px 16px',background:'var(--bg)',borderBottom:'0.5px solid var(--border)',display:'flex',alignItems:'center',gap:'12px',flexShrink:'0'}},
+      btn('btn-secondary btn-sm','← 選択に戻る',()=>set({form:null,splitSelf:null,page:'sup-eval'})),
+      h('span',{style:{fontWeight:'500',fontSize:'13px'}},`上司評価：${targetUser?.name||''} / ${targetUser?.dept||''}`),
+      selfEv&&h('span',{class:'badge status-submitted',style:{marginLeft:'4px'}},'自己評価を参照中')
+    ),
+    h('div',{style:{display:'grid',gridTemplateColumns:'38% 62%',flex:'1',overflow:'hidden',minHeight:'0'}},
+      h('div',{style:{overflow:'y-auto',padding:'14px',background:'var(--bg2)',borderRight:'0.5px solid var(--border)',overflowY:'auto'}},
+        h('h4',{style:{marginBottom:'10px',color:'var(--text3)',fontSize:'12px',textTransform:'uppercase',letterSpacing:'.5px'}},'← 対象者の自己評価'),
+        renderSelfReadonly(selfEv)
+      ),
+      h('div',{style:{overflowY:'auto',padding:'14px'}},
+        h('h4',{style:{marginBottom:'10px',color:'var(--text3)',fontSize:'12px',textTransform:'uppercase',letterSpacing:'.5px'}},'→ 上司評価を入力'),
+        formEl
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// HISTORY + GOALS
+// ═══════════════════════════════════════════════════
+function renderHistory(){
+  const u=S.user;
+  const evals=DB.evaluations.filter(e=>e.evaluatee_id===u.id).sort((a,b)=>b.submitted_at-a.submitted_at);
+  const goals=DB.goals.filter(g=>g.user_id===u.id);
+  return h('div',{id:'content'},
+    h('div',{class:'card mb16'},
+      h('div',{class:'fb mb12'},
+        h('h3',null,'評価提出履歴'),
+        btn('btn-primary btn-sm no-print','+ 新規自己評価',()=>set({page:'self-eval',form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null}))
+      ),
+      evals.length===0
+        ? h('div',{style:{textAlign:'center',padding:'24px',color:'var(--text3)'}},'提出した評価はありません')
+        : h('div',{style:{overflowX:'auto'}},
+            h('table',{class:'tbl'},
+              h('thead',null,h('tr',null,...['種別','期間','合計','グレード','ステータス','提出日','操作'].map(l=>h('th',null,l)))),
+              h('tbody',null,...evals.map(ev=>{
+                const sc2=calcSc(ev.answers);const g2=getG(sc2.total);
+                return h('tr',null,
+                  h('td',null,ev.type==='self'?'自己評価':'上司評価'),
+                  h('td',null,ev.period||'—'),
+                  h('td',{style:{color:g2.color,fontWeight:'500'}},`${sc2.total}点`),
+                  h('td',null,gBadge(g2.g)),
+                  h('td',null,stBadge(ev.status)),
+                  h('td',null,fmtDate(ev.submitted_at)),
+                  h('td',null,h('div',{class:'flex gap6'},
+                    btn('btn-secondary btn-xs no-print','🖨',()=>printEval(ev.id))
+                  ))
+                );
+              }))
+            )
+          )
+    ),
+    h('div',{class:'card'},
+      h('div',{class:'fb mb12'},
+        h('h3',null,'目標管理'),
+        btn('btn-primary btn-sm no-print','+ 目標追加',()=>set({modal:{type:'add-goal',userId:u.id}}))
+      ),
+      goals.length===0
+        ? h('div',{style:{textAlign:'center',padding:'20px',color:'var(--text3)'}},'目標が登録されていません')
+        : h('div',{style:{display:'grid',gap:'8px'}},
+            ...goals.map(gl=>h('div',{style:{padding:'9px 11px',border:'0.5px solid var(--border)',borderRadius:'8px',opacity:gl.status==='completed'?'0.7':'1'}},
+              h('div',{class:'fb mb6'},
+                h('span',{style:{fontWeight:'500',fontSize:'13px'}},gl.title),
+                h('div',{class:'flex gap6'},
+                  h('span',{class:'badge',style:{background:'var(--teal-l)',color:'var(--teal-d)'}},gl.category),
+                  h('span',{class:'muted'},`〆${gl.deadline}`),
+                  btn('btn-secondary btn-xs no-print','✕',()=>{DB.goals=DB.goals.filter(g=>g.id!==gl.id);save();render();})
+                )
+              ),
+              h('div',{class:'flex gap8'},
+                h('input',{type:'range',min:'0',max:'100',step:'1',value:gl.progress,style:{flex:'1',accentColor:'var(--teal)'},
+                  onInput(e){const i=DB.goals.findIndex(g=>g.id===gl.id);if(i>=0){DB.goals[i].progress=parseInt(e.target.value);DB.goals[i].status=parseInt(e.target.value)===100?'completed':'active';}save();render();}}),
+                h('span',{style:{fontSize:'12px',fontWeight:'500',minWidth:'38px',textAlign:'right',color:gl.progress===100?'var(--teal)':'var(--text2)'}},`${gl.progress}%`)
+              )
+            ))
+          )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN: USER MANAGEMENT
+// ═══════════════════════════════════════════════════
+function renderAdminUsers(){
+  const canReset=['sysadmin','jimucho'].includes(S.user.role);
+  const users=DB.users.sort((a,b)=>{
+    const ro=['sysadmin','incho','jimucho','head','staff'];
+    return ro.indexOf(a.role)-ro.indexOf(b.role)||a.dept.localeCompare(b.dept,'ja');
+  });
+  return h('div',null,
+    h('div',{class:'card'},
+      h('div',{class:'fb mb12'},
+        h('h3',null,'ユーザー管理'),
+        btn('btn-primary btn-sm','+ ユーザー追加',()=>set({modal:{type:'add-user'}}))
+      ),
+      h('div',{style:{overflowX:'auto'}},
+        h('table',{class:'tbl'},
+          h('thead',null,h('tr',null,...['氏名','所属','職種','役割','生年月日','操作'].map(l=>h('th',null,l)))),
+          h('tbody',null,...users.map(u=>h('tr',null,
+            h('td',{style:{fontWeight:'500'}},u.name),
+            h('td',null,u.dept),
+            h('td',null,shLabel(u.shokushu)),
+            h('td',null,rChip(u.role)),
+            h('td',{style:{fontSize:'11px',color:'var(--text3)'}},u.birthdate||'—'),
+            h('td',null,h('div',{class:'flex gap6'},
+              u.id!=='seed-sys'&&btn('btn-secondary btn-xs','編集',()=>set({modal:{type:'edit-user',user:JSON.parse(JSON.stringify(u))}})),
+              canReset&&u.id!=='seed-sys'&&u.birthdate&&btn('btn-warn btn-xs','PW初期化',()=>{
+                if(confirm(u.name+'のパスワードを誕生日（'+u.birthdate.replace(/-/g,'')+'）に初期化しますか？')){
+                  const i=DB.users.findIndex(x=>x.id===u.id);
+                  if(i>=0){DB.users[i].password=u.birthdate.replace(/-/g,'');}
+                  save();render();toast(u.name+'のパスワードを初期化しました');
+                }
+              }),
+              u.id!=='seed-sys'&&btn('btn-danger btn-xs','削除',()=>{
+                if(confirm(u.name+'を削除しますか？')){DB.users=DB.users.filter(x=>x.id!==u.id);save();render();}
+              })
+            ))
+          )))
+        )
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN: APPROVALS
+// ═══════════════════════════════════════════════════
+function renderAdminApprovals(){
+  const u=S.user;
+  const isDept=u.role==='head';
+  let pending1=DB.evaluations.filter(e=>e.status==='submitted');
+  if(isDept)pending1=pending1.filter(e=>e.evaluatee_dept===u.dept);
+  const pending2=CAN_APPROVE2.includes(u.role)?DB.evaluations.filter(e=>e.status==='approved_1'):[];
+  const done=DB.evaluations.filter(e=>['approved_2','rejected'].includes(e.status)).sort((a,b)=>b.submitted_at-a.submitted_at).slice(0,20);
+
+  function apvCard(ev,stage){
+    const sc2=calcSc(ev.answers);const g2=getG(sc2.total);
+    const low2=KIHON.filter((k,i)=>(ev.answers.kihon[i]||0)===1).map(k=>k.training);
+    return h('div',{style:{border:`1.5px solid ${g2.color}`,borderRadius:'9px',padding:'11px 13px',marginBottom:'9px',background:g2.bg},class:'card'},
+      h('div',{class:'fb mb8'},
+        h('div',null,
+          h('div',{style:{fontWeight:'500',fontSize:'14px'}},ev.evaluatee_name,h('span',{class:'muted',style:{marginLeft:'6px',fontSize:'11px'}},ev.evaluatee_dept)),
+          h('div',{class:'muted',style:{marginTop:'1px'}},shLabel(ev.evaluatee_shokushu)+' · '+ev.period+' · '+(ev.type==='self'?'自己評価':'上司評価'))
+        ),
+        h('div',{style:{textAlign:'center'}},
+          h('div',{class:'grade-big',style:{color:g2.color,fontSize:'28px'}},g2.g),
+          h('div',{style:{fontSize:'11px',color:g2.color}},`${sc2.total}点`)
+        )
+      ),
+      low2.length>0&&h('div',{style:{fontSize:'11px',color:'var(--amber-d)',background:'var(--amber-l)',padding:'5px 8px',borderRadius:'5px',marginBottom:'7px'}},
+        '📚 '+low2.join(' ／ ')
+      ),
+      stage===2&&ev.approval_1&&h('div',{style:{fontSize:'11px',color:'var(--teal-d)',background:'var(--teal-l)',padding:'5px 8px',borderRadius:'5px',marginBottom:'7px'}},
+        `✔ 一次承認：${ev.approval_1.by_name}（${fmtDate(ev.approval_1.at)}）`,
+        ev.approval_1.comment&&h('span',null,' — '+ev.approval_1.comment)
+      ),
+      h('div',{class:'flex gap8'},
+        btn('btn-secondary btn-sm','🖨 印刷',()=>printEval(ev.id)),
+        btn('btn-primary btn-sm',stage===1?'✔ 一次承認':'✔ 最終承認',()=>set({modal:{type:'approve',ev,stage}})),
+        btn('btn-danger btn-sm','✕ 差戻し',()=>{
+          if(confirm('差し戻しますか？')){
+            const i=DB.evaluations.findIndex(e=>e.id===ev.id);
+            if(i>=0){DB.evaluations[i].status='rejected';}
+            save();render();toast('差し戻しました','warn');
+          }
+        })
+      )
+    );
+  }
+
+  return h('div',{id:'content'},
+    pending1.length>0&&h('div',{class:'mb16'},
+      h('h3',{style:{marginBottom:'10px'}},`一次承認待ち（${pending1.length}件）`),
+      ...pending1.map(ev=>apvCard(ev,1))
+    ),
+    pending2.length>0&&h('div',{class:'mb16'},
+      h('h3',{style:{marginBottom:'10px'}},`二次承認待ち（${pending2.length}件）`),
+      ...pending2.map(ev=>apvCard(ev,2))
+    ),
+    pending1.length===0&&pending2.length===0&&h('div',{class:'card mb16',style:{textAlign:'center',padding:'24px',color:'var(--text3)',background:'var(--teal-l)',borderColor:'var(--teal)'}},'✓ 承認待ちの評価はありません'),
+    done.length>0&&h('div',{class:'card'},
+      h('h3',{style:{marginBottom:'10px'}},'承認・差戻し済み'),
+      h('div',{style:{overflowX:'auto'}},
+        h('table',{class:'tbl'},
+          h('thead',null,h('tr',null,...['氏名','期間','合計','グレード','ステータス','最終承認日','操作'].map(l=>h('th',null,l)))),
+          h('tbody',null,...done.map(ev=>{
+            const sc2=calcSc(ev.answers);const g2=getG(sc2.total);
+            return h('tr',null,
+              h('td',{style:{fontWeight:'500'}},ev.evaluatee_name),
+              h('td',null,ev.period),
+              h('td',{style:{color:g2.color,fontWeight:'500'}},`${sc2.total}点`),
+              h('td',null,gBadge(g2.g)),
+              h('td',null,stBadge(ev.status)),
+              h('td',null,fmtDate(ev.approval_2?.at||ev.submitted_at)),
+              h('td',null,btn('btn-secondary btn-xs no-print','🖨',()=>printEval(ev.id)))
+            );
+          }))
+        )
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN: DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderAdminDashboard(){
+  const u=S.user;
+  const isDeptOnly=u.role==='head';
+  let evs=DB.evaluations.filter(e=>e.status==='submitted'||e.status==='approved_1'||e.status==='approved_2');
+  if(isDeptOnly)evs=evs.filter(e=>e.evaluatee_dept===u.dept);
+
+  const avg=evs.length?Math.round(evs.reduce((a,e)=>a+calcSc(e.answers).total,0)/evs.length):0;
+  const gDist={S:0,A:0,B:0,C:0,D:0};
+  evs.forEach(e=>{gDist[getG(calcSc(e.answers).total).g]++;});
+
+  // Dept breakdown (for jimucho/incho/sysadmin)
+  const depts=[...new Set(DB.users.map(u=>u.dept))].filter(Boolean);
+  const deptData=depts.map(d=>{
+    const devs=evs.filter(e=>e.evaluatee_dept===d);
+    return{dept:d,count:devs.length,avg:devs.length?Math.round(devs.reduce((a,e)=>a+calcSc(e.answers).total,0)/devs.length):0};
+  }).filter(d=>d.count>0);
+
+  return h('div',{id:'content'},
+    h('div',{class:'g4 mb16'},
+      ...[{l:'対象件数',v:`${evs.length}件`,c:'var(--teal)'},{l:'平均スコア',v:`${avg}点`,c:'var(--blue)'},{l:'S/A評価',v:`${(gDist.S||0)+(gDist.A||0)}名`,c:'var(--purple)'},{l:'C/D評価',v:`${(gDist.C||0)+(gDist.D||0)}名`,c:'var(--red)'}]
+      .map(x=>h('div',{class:'card',style:{textAlign:'center'}},
+        h('div',{class:'muted mb8'},x.l),
+        h('div',{style:{fontSize:'22px',fontWeight:'500',color:x.c}},x.v)
+      ))
+    ),
+    h('div',{class:'g2 mb16'},
+      h('div',{class:'card'},
+        h('h3',{style:{marginBottom:'12px'}},'グレード分布'),
+        h('div',{class:'bchart'},
+          ...GRADE_DEF.map(gd=>h('div',{class:'brow'},
+            h('div',{class:'brow-lbl'},gd.g),
+            h('div',{class:'btrack'},
+              evs.length>0&&h('div',{class:'bfill',style:{width:Math.round((gDist[gd.g]||0)/evs.length*100)+'%',background:gd.color,minWidth:(gDist[gd.g]||0)>0?'20px':'0'}},
+                (gDist[gd.g]||0)>0?`${gDist[gd.g]}名`:''
+              )
+            ),
+            h('span',{style:{fontSize:'11px',color:'var(--text3)',minWidth:'28px'}},gDist[gd.g]||0)
+          ))
+        )
+      ),
+      h('div',{class:'card'},
+        h('h3',{style:{marginBottom:'12px'}},'セクション別平均'),
+        h('div',{class:'bchart'},
+          ...(evs.length?[{l:'基本行動',v:Math.round(evs.reduce((a,e)=>a+calcSc(e.answers).kihon,0)/evs.length),m:50,c:'#1D9E75'},{l:'職務遂行',v:Math.round(evs.reduce((a,e)=>a+calcSc(e.answers).shokumu,0)/evs.length),m:30,c:'#378ADD'},{l:'自己成長',v:Math.round(evs.reduce((a,e)=>a+calcSc(e.answers).seichou,0)/evs.length),m:30,c:'#BA7517'},{l:'目標管理',v:Math.round(evs.reduce((a,e)=>a+calcSc(e.answers).mokuhyo,0)/evs.length),m:40,c:'#7F77DD'}]:[])
+          .map(x=>h('div',{class:'brow'},
+            h('div',{class:'brow-lbl'},x.l),
+            h('div',{class:'btrack'},h('div',{class:'bfill',style:{width:Math.round(x.v/x.m*100)+'%',background:x.c}},`${x.v}pt`)),
+            h('span',{style:{fontSize:'11px',color:'var(--text3)',minWidth:'38px'}},`${x.v}/${x.m}`)
+          ))
+        )
+      )
+    ),
+    !isDeptOnly&&deptData.length>0&&h('div',{class:'card mb16'},
+      h('h3',{style:{marginBottom:'12px'}},'部署別平均スコア'),
+      h('div',{class:'bchart'},
+        ...deptData.sort((a,b)=>b.avg-a.avg).map(d=>h('div',{class:'brow'},
+          h('div',{class:'brow-lbl',style:{minWidth:'90px',fontSize:'11px'}},d.dept),
+          h('div',{class:'btrack'},h('div',{class:'bfill',style:{width:Math.round(d.avg/150*100)+'%',background:'var(--teal)'}},`${d.avg}点`)),
+          h('span',{style:{fontSize:'11px',color:'var(--text3)',minWidth:'54px'}},`${d.avg}点 / ${d.count}件`)
+        ))
+      )
+    ),
+    h('div',{class:'card'},
+      h('div',{class:'fb mb12'},
+        h('h3',null,'提出一覧'),
+        btn('btn-secondary btn-sm no-print','CSVエクスポート',()=>exportCSV(evs))
+      ),
+      evs.length===0?h('div',{style:{textAlign:'center',padding:'24px',color:'var(--text3)'}},'データがありません')
+      :h('div',{style:{overflowX:'auto'}},
+        h('table',{class:'tbl'},
+          h('thead',null,h('tr',null,...['氏名','所属','合計','グレード','種別','ステータス','提出日'].map(l=>h('th',null,l)))),
+          h('tbody',null,...evs.sort((a,b)=>b.submitted_at-a.submitted_at).map(ev=>{
+            const sc2=calcSc(ev.answers);const g2=getG(sc2.total);
+            return h('tr',null,
+              h('td',{style:{fontWeight:'500'}},ev.evaluatee_name),
+              h('td',null,ev.evaluatee_dept),
+              h('td',{style:{color:g2.color,fontWeight:'500'}},`${sc2.total}点`),
+              h('td',null,gBadge(g2.g)),
+              h('td',null,ev.type==='self'?'自己':'上司'),
+              h('td',null,stBadge(ev.status)),
+              h('td',null,fmtDate(ev.submitted_at))
+            );
+          }))
+        )
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN: EXPORT
+// ═══════════════════════════════════════════════════
+function renderAdminExport(){
+  const all=DB.evaluations.filter(e=>e.status!=='draft');
+  return h('div',null,
+    h('div',{class:'card mb16'},
+      h('h3',{style:{marginBottom:'8px'}},'空白評価用紙の印刷'),
+      h('div',{class:'muted',style:{marginBottom:'12px',lineHeight:'1.6'}},'職種を選択して空白の評価用紙（A4）を印刷できます。紙派の職員向けにご利用ください。'),
+      h('div',{style:{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:'8px'}},
+        ...SHOKUSHU.map(s=>h('button',{
+          class:'btn btn-secondary',
+          style:{justifyContent:'flex-start',gap:'8px',padding:'10px 14px'},
+          onClick(){printBlankForm(s.id);}
+        },h('span',null,s.icon),h('span',null,s.label+' 用'),h('span',{style:{marginLeft:'auto',color:'var(--text3)',fontSize:'11px'}},'🖨 印刷')))
+      )
+    ),
+    h('div',{class:'card mb16'},
+      h('h3',{style:{marginBottom:'8px'}},'CSVエクスポート'),
+      h('div',{class:'muted',style:{marginBottom:'12px',lineHeight:'1.6'}},`提出済み評価 ${all.length}件。全評価項目の点数・総合点・グレード・承認情報を含みます。`),
+      h('div',{class:'flex gap10'},
+        btn('btn-primary','⬇ 全件 CSV',()=>exportCSV(all)),
+        btn('btn-secondary','⬇ 最終承認済みのみ',()=>exportCSV(DB.evaluations.filter(e=>e.status==='approved_2')))
+      )
+    ),
+    h('div',{class:'card'},
+      h('h3',{style:{marginBottom:'10px'}},'利用ガイド'),
+      h('div',{style:{display:'grid',gap:'9px'}},
+        ...[
+          {i:'👤',t:'個人アクセス','d':'各職員がこのHTMLファイルをブラウザで開いてログイン。データはブラウザ内（localStorage）に保存されます。'},
+          {i:'🖨',t:'印刷','d':'評価提出後、🖨 ボタンから印刷専用ページ（A4縦）を開けます。上司サイン欄・コメント欄付き。'},
+          {i:'🔗',t:'共有フォルダ運用','d':'このHTMLを病院の共有フォルダに置いて全員がアクセスすると、同一PCのブラウザでデータを共有できます。'},
+          {i:'☁',t:'クラウド化','d':'2027年度電子化計画に合わせて、GoogleフォームやNotionデータベースとの連携も検討可能です。'},
+        ].map(x=>h('div',{style:{padding:'9px 11px',background:'var(--bg2)',borderRadius:'7px'}},
+          h('div',{style:{fontSize:'12px',fontWeight:'500',marginBottom:'2px'}},x.i+' '+x.t),
+          h('div',{class:'muted',style:{lineHeight:'1.5'}},x.d)
+        ))
+      )
+    )
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// PASSWORD CHANGE (self)
+// ═══════════════════════════════════════════════════
+function renderChangePw(){
+  const u=S.user;
+  let cur='',nw='',cf='';
+  const errEl=h('div',{style:{fontSize:'12px',color:'var(--red)',background:'var(--red-l)',padding:'6px 9px',borderRadius:'6px',marginBottom:'8px',display:'none'}});
+  const form=h('div',{class:'card',style:{maxWidth:'440px'}},
+    h('h3',{style:{marginBottom:'16px'}},'パスワード変更'),
+    h('div',{style:{background:'var(--bg2)',borderRadius:'7px',padding:'9px 12px',marginBottom:'16px',fontSize:'12px',color:'var(--text2)',lineHeight:'1.6'}},
+      '現在のパスワードを確認後、新しいパスワードを設定します。',
+      h('br',null),
+      'パスワードを忘れた場合は事務長またはシステム管理者に初期化を依頼してください。'
+    ),
+    errEl,
+    h('div',{style:{display:'grid',gap:'10px',marginBottom:'16px'}},
+      h('div',null,
+        h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'現在のパスワード'),
+        h('input',{type:'password',placeholder:'現在のパスワード',onInput(e){cur=e.target.value;}})
+      ),
+      h('div',null,
+        h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'新しいパスワード'),
+        h('input',{type:'password',placeholder:'新しいパスワード（8文字以上推奨）',onInput(e){nw=e.target.value;}})
+      ),
+      h('div',null,
+        h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'新しいパスワード（確認）'),
+        h('input',{type:'password',placeholder:'もう一度入力',onInput(e){cf=e.target.value;}})
+      )
+    ),
+    h('div',{class:'flex gap8'},
+      btn('btn-primary','パスワードを変更する',()=>{
+        const dbUser=DB.users.find(x=>x.id===u.id);
+        if(!dbUser){errEl.textContent='ユーザーが見つかりません';errEl.style.display='block';return;}
+        if(cur!==dbUser.password){errEl.textContent='現在のパスワードが正しくありません';errEl.style.display='block';return;}
+        if(!nw.trim()){errEl.textContent='新しいパスワードを入力してください';errEl.style.display='block';return;}
+        if(nw!==cf){errEl.textContent='新しいパスワードが一致しません';errEl.style.display='block';return;}
+        const i=DB.users.findIndex(x=>x.id===u.id);
+        if(i>=0)DB.users[i].password=nw;
+        save();
+        toast('パスワードを変更しました');
+        set({page:'dashboard'});
+      })
+    )
+  );
+  return h('div',null,form);
+}
+
+// ═══════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════
+function renderModal(){
+  const m=S.modal;if(!m)return null;
+  let body;
+
+  if(m.type==='approve'){
+    const{ev,stage}=m;let comment='';
+    const sc2=calcSc(ev.answers);const g2=getG(sc2.total);
+    const label=stage===1?'一次承認（所属長）':'二次承認（事務長）';
+    body=h('div',null,
+      h('h3',{style:{marginBottom:'10px'}},`${ev.evaluatee_name} さんの評価を${label}`),
+      h('div',{style:{background:g2.bg,borderRadius:'7px',padding:'8px 12px',marginBottom:'12px',fontSize:'13px',color:g2.color,fontWeight:'500'}},
+        `${g2.g} ${g2.label} — ${sc2.total}/150点`
+      ),
+      h('div',{style:{marginBottom:'12px'}},
+        h('label',{style:{fontSize:'12px',fontWeight:'500',display:'block',marginBottom:'5px'}},label+'コメント（任意）'),
+        h('textarea',{placeholder:'フィードバックコメント…',onInput(e){comment=e.target.value;}})
+      ),
+      h('div',{class:'flex gap8',style:{justifyContent:'flex-end'}},
+        btn('btn-secondary','キャンセル',()=>set({modal:null})),
+        btn('btn-primary',`✔ ${label}する`,()=>{
+          const i=DB.evaluations.findIndex(e=>e.id===ev.id);
+          if(i>=0){
+            if(stage===1){DB.evaluations[i].status='approved_1';DB.evaluations[i].approval_1={at:Date.now(),by_id:S.user.id,by_name:S.user.name,comment};}
+            else{DB.evaluations[i].status='approved_2';DB.evaluations[i].approval_2={at:Date.now(),by_id:S.user.id,by_name:S.user.name,comment};}
+          }
+          save();set({modal:null});toast('承認しました');
+        })
+      )
+    );
+  }
+
+  if(m.type==='add-goal'){
+    let gf={title:'',category:'誠実',deadline:''};
+    body=h('div',null,
+      h('h3',{style:{marginBottom:'10px'}},'目標を追加'),
+      h('div',{style:{display:'grid',gap:'9px',marginBottom:'12px'}},
+        h('input',{type:'text',placeholder:'目標タイトル',onInput(e){gf.title=e.target.value;}}),
+        h('div',{class:'g2'},
+          h('select',{onChange(e){gf.category=e.target.value;}},
+            ...['誠実','傾聴','協調','職務遂行','自己成長'].map(c=>h('option',{value:c},c))
+          ),
+          h('input',{type:'date',onInput(e){gf.deadline=e.target.value;}})
+        )
+      ),
+      h('div',{class:'flex gap8',style:{justifyContent:'flex-end'}},
+        btn('btn-secondary','キャンセル',()=>set({modal:null})),
+        btn('btn-primary','追加する',()=>{
+          if(!gf.title||!gf.deadline){alert('タイトルと期限を入力してください');return;}
+          DB.goals.push({id:uid(),user_id:m.userId,...gf,progress:0,status:'active',created_at:Date.now()});
+          save();set({modal:null});toast('目標を追加しました');
+        })
+      )
+    );
+  }
+
+  if(m.type==='add-user'||m.type==='edit-user'){
+    const isEdit=m.type==='edit-user';
+    const uf=isEdit?m.user:{id:uid(),name:'',dept:'',shokushu:'kango',role:'staff',password:'',birthdate:'',created_at:Date.now()};
+    function upField(k,v){uf[k]=v;}
+    const depts=[...new Set(DB.users.map(u=>u.dept))].filter(Boolean);
+    body=h('div',null,
+      h('h3',{style:{marginBottom:'12px'}},isEdit?'ユーザー編集':'ユーザー追加'),
+      h('div',{style:{display:'grid',gap:'9px',marginBottom:'12px'}},
+        h('div',null,h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'氏名'),
+          h('input',{type:'text',value:uf.name,placeholder:'山田 花子',onInput(e){upField('name',e.target.value);}})
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'所属部署'),
+          h('input',{type:'text',value:uf.dept,placeholder:'例：看護部、リハビリ科…',list:'dept-list',onInput(e){upField('dept',e.target.value);}}),
+          h('datalist',{id:'dept-list'},...depts.map(d=>h('option',{value:d})))
+        ),
+        h('div',{class:'g2'},
+          h('div',null,h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'職種'),
+            h('select',{value:uf.shokushu,onChange(e){upField('shokushu',e.target.value);}},
+              ...SHOKUSHU.map(s=>h('option',{value:s.id,selected:s.id===uf.shokushu},s.icon+' '+s.label))
+            )
+          ),
+          h('div',null,h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'役割'),
+            h('select',{value:uf.role,onChange(e){upField('role',e.target.value);}},
+              ...Object.entries(ROLES).map(([k,v])=>h('option',{value:k,selected:k===uf.role},v.label))
+            )
+          )
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'生年月日（初期パスワードになります）'),
+          h('input',{type:'date',value:uf.birthdate||'',
+            onInput(e){
+              upField('birthdate',e.target.value);
+              if(!isEdit&&e.target.value){
+                upField('password',e.target.value.replace(/-/g,''));
+                const pwHint=document.getElementById('pw-hint');
+                if(pwHint)pwHint.textContent='自動設定: '+e.target.value.replace(/-/g,'');
+              }
+            }
+          })
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},isEdit?'パスワード（変更する場合のみ入力）':'パスワード（空欄なら生年月日8桁が自動設定）'),
+          h('input',{type:'password',value:isEdit?'':uf.password,
+            placeholder:isEdit?'変更する場合のみ入力':'生年月日から自動設定されます',
+            onInput(e){if(e.target.value)upField('password',e.target.value);}
+          }),
+          !isEdit&&h('div',{id:'pw-hint',style:{fontSize:'11px',color:'var(--teal-d)',marginTop:'3px'}},
+            uf.birthdate?'自動設定: '+uf.birthdate.replace(/-/g,''):'生年月日を入力すると自動設定されます'
+          )
+        )
+      ),
+      h('div',{class:'flex gap8',style:{justifyContent:'flex-end'}},
+        btn('btn-secondary','キャンセル',()=>set({modal:null})),
+        btn('btn-primary',isEdit?'保存':'追加',()=>{
+          if(!uf.name.trim()||!uf.dept.trim()){alert('氏名と所属を入力してください');return;}
+          if(!isEdit){
+            if(!uf.password.trim()&&!uf.birthdate){alert('生年月日またはパスワードを設定してください');return;}
+            if(!uf.password.trim()&&uf.birthdate)upField('password',uf.birthdate.replace(/-/g,''));
+            if(DB.users.find(u=>u.name===uf.name.trim()&&u.dept===uf.dept.trim())){alert('同じ氏名・所属のユーザーが既に存在します');return;}
+          }
+          if(isEdit){const i=DB.users.findIndex(u=>u.id===uf.id);if(i>=0)DB.users[i]=uf;}
+          else DB.users.push(uf);
+          save();set({modal:null});toast(isEdit?'ユーザーを更新しました':'ユーザーを追加しました');
+        })
+      )
+    );
+  }
+
+  if(m.type==='cloud-config'){
+    let u=CLOUD.url, s=CLOUD.secret;
+    body=h('div',null,
+      h('h3',{style:{marginBottom:'12px'}},'☁ クラウド接続設定'),
+      h('div',{style:{background:'var(--blue-l)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px',fontSize:'12px',color:'var(--blue-d)',lineHeight:'1.6'}},
+        'Google Apps Script の Web App URL と秘密キーを入力してください。',
+        h('br',null),'設定後、全職員がこのURLを使えばデータが共有されます。'
+      ),
+      h('div',{style:{display:'grid',gap:'10px',marginBottom:'14px'}},
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'Apps Script Web App URL'),
+          h('input',{type:'text',value:u,placeholder:'https://script.google.com/macros/s/AKfy.../exec',
+            onInput(e){u=e.target.value;}})
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'秘密キー（GASコードの SECRET と同じ値）'),
+          h('input',{type:'text',value:s,placeholder:'CHANGE_THIS_SECRET_2025',
+            onInput(e){s=e.target.value;}})
+        )
+      ),
+      h('div',{class:'flex gap8'},
+        u&&s&&h('button',{class:'btn btn-secondary',
+          onClick(){
+            CLOUD={url:u.trim(),secret:s.trim()};saveCloudCfg();
+            // Test connection
+            const testEl=document.getElementById('cloud-test');
+            if(testEl){testEl.textContent='接続テスト中…';testEl.style.color='var(--blue-d)';}
+            loadFromCloud().then(data=>{
+              if(data){
+                if(testEl){testEl.textContent='✅ 接続成功！データを取得しました';testEl.style.color='var(--teal-d)';}
+                DB=data;saveDB(DB);
+                setTimeout(()=>set({modal:null,page:'dashboard'}),1200);
+              } else {
+                if(testEl){testEl.textContent='❌ 接続失敗。URLとキーを確認してください';testEl.style.color='var(--red)';}
+              }
+            });
+          }
+        },'🔌 接続テスト'),
+        h('div',{id:'cloud-test',style:{fontSize:'12px',marginLeft:'8px',paddingTop:'6px'}})
+      ),
+      h('div',{class:'flex gap8',style:{justifyContent:'flex-end',marginTop:'12px'}},
+        btn('btn-secondary','キャンセル',()=>set({modal:null})),
+        btn('btn-primary','保存',()=>{
+          CLOUD={url:u.trim(),secret:s.trim()};saveCloudCfg();
+          set({modal:null});toast('クラウド設定を保存しました');
+        }),
+        CLOUD.url&&btn('btn-danger btn-sm','接続を解除',()=>{
+          CLOUD={url:'',secret:''};saveCloudCfg();
+          set({modal:null});toast('クラウド接続を解除しました','warn');
+        })
+      )
+    );
+  }
+
+  return h('div',{class:'overlay',onClick(e){if(e.target===e.currentTarget)set({modal:null});}},
+    h('div',{class:'modal'},body)
+  );
+}
+
+// ═══════════════════════════════════════════════════
+// TOPBAR TITLES
+// ═══════════════════════════════════════════════════
+const PAGE_TITLES={
+  'change-pw':'パスワード変更',
+  'dashboard':'ダッシュボード',
+  'self-eval':'自己評価入力',
+  'sup-eval':'上司評価（他者評価）',
+  'history':'評価履歴・目標管理',
+  'admin-approvals':'承認管理',
+  'admin-dashboard':'集計・分析ダッシュボード',
+  'admin-export':'エクスポート・ガイド',
+  'admin-users':'ユーザー管理',
+};
+
+// ═══════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════
+function renderPageContent(){
+  switch(S.page){
+    case 'dashboard':       return renderDashboard();
+    case 'self-eval':       return renderEvalForm(false);
+    case 'history':         return renderHistory();
+    case 'change-pw':       return renderChangePw();
+    case 'admin-approvals': return renderAdminApprovals();
+    case 'admin-dashboard': return renderAdminDashboard();
+    case 'admin-export':    return renderAdminExport();
+    case 'admin-users':     return renderAdminUsers();
+    default:                return renderDashboard();
+  }
+}
+
+function render(){
+  const app=document.getElementById('app');
+  app.innerHTML='';
+  if(S.screen==='login'){
+    app.appendChild(renderLogin());
+    if(S.toast)app.appendChild(h('div',{class:'toast',style:{background:S.toast.type==='warn'?'var(--amber)':'var(--teal)'}},S.toast.msg));
+    return;
+  }
+
+  const isSupWithForm=S.page==='sup-eval'&&S.form;
+
+  const layout=h('div',{id:'layout'},
+    renderSidebar(),
+    h('div',{id:'main'},
+      h('div',{id:'topbar'},
+        h('span',null,PAGE_TITLES[S.page]||''),
+        h('div',{class:'flex gap8'},
+          h('span',{id:'sync-badge',style:{fontSize:'11px',padding:'3px 8px',borderRadius:'5px',background:'var(--bg3)',color:'var(--text3)'}},
+            CLOUD.url ? '☁ クラウド同期済' : 'ローカル保存'
+          ),
+          ['sysadmin','jimucho'].includes(S.user?.role)&&
+            btn('btn-secondary btn-sm no-print','☁ クラウド設定',()=>set({modal:{type:'cloud-config'}})),
+          btn('btn-secondary btn-sm no-print','🖨 ページ印刷',()=>window.print()),
+          h('span',{class:'muted'},S.user?.name)
+        )
+      ),
+      isSupWithForm
+        ? renderSupEval()
+        : h('div',{style:{flex:'1',overflowY:'auto',padding:'14px',maxWidth:'800px'}},
+            S.page==='sup-eval'?renderSupEval():renderPageContent()
+          )
+    )
+  );
+  app.appendChild(layout);
+  const modal=renderModal();if(modal)app.appendChild(modal);
+  if(S.toast)app.appendChild(h('div',{class:'toast',style:{background:S.toast.type==='warn'?'var(--amber)':'var(--teal)'}},S.toast.msg));
+}
+
+// ── 初期化（クラウドから読み込み試行）──────────────
+async function init(){
+  // クラウド設定があればデータを取得
+  if(CLOUD.url && CLOUD.secret){
+    syncStatus='syncing';
+    const cloudData = await loadFromCloud();
+    if(cloudData && cloudData.users){
+      DB = cloudData;
+      saveDB(DB); // ローカルにもキャッシュ
+      syncStatus = 'synced';
+    } else {
+      syncStatus = 'error';
+    }
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
