@@ -81,9 +81,16 @@ textarea{resize:vertical;min-height:68px}
 .opt-desc{font-size:11px;color:var(--text3);line-height:1.5}
 .lbl10{color:var(--teal-d)}.lbl5{color:var(--blue-d)}.lbl1{color:var(--amber-d)}
 /* Form progress */
-.fprog{display:flex;gap:3px;margin-bottom:14px}
-.fprog-s{flex:1;height:3px;border-radius:2px;background:var(--border)}
-.fprog-s.done{background:var(--teal)}.fprog-s.now{background:#9FE1CB}
+.fprog{display:flex;gap:4px;margin-bottom:16px;align-items:flex-end}
+.fprog-s{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:default;padding:0 2px}
+.fprog-s.clickable{cursor:pointer}
+.fprog-s.clickable:hover .fprog-bar{opacity:.8}
+.fprog-bar{width:100%;height:3px;border-radius:2px;background:var(--border);transition:background .2s}
+.fprog-s.done .fprog-bar{background:var(--teal)}
+.fprog-s.now .fprog-bar{background:#9FE1CB}
+.fprog-lbl{font-size:9px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.fprog-s.done .fprog-lbl{color:var(--teal-d)}
+.fprog-s.now .fprog-lbl{color:var(--teal);font-weight:500}
 /* Split pane */
 #split-wrap{display:flex;height:100%;overflow:hidden;gap:0}
 #split-left{width:40%;flex-shrink:0;overflow-y:auto;padding:14px;background:var(--bg2);border-right:0.5px solid var(--border)}
@@ -239,6 +246,17 @@ const PERIODS=genPeriods();
 // ═══════════════════════════════════════════════════
 const HOSPITAL='納病院';
 const STORAGE='ryujinkai_v2';
+const DRAFT_KEY='ryujinkai_draft_v1'; // 自己評価下書き保存用
+
+function saveDraft(formData){
+  try{localStorage.setItem(DRAFT_KEY,JSON.stringify(formData));}catch(e){}
+}
+function loadDraft(){
+  try{const s=localStorage.getItem(DRAFT_KEY);return s?JSON.parse(s):null;}catch(e){return null;}
+}
+function clearDraft(){
+  try{localStorage.removeItem(DRAFT_KEY);}catch(e){}
+}
 const ROLES={
   sysadmin:{label:'システム管理者',chip:'role-sysadmin',short:'SYS'},
   incho:   {label:'院長',          chip:'role-incho',   short:'院長'},
@@ -785,7 +803,21 @@ function renderDashboard(){
   } else {
     els.push(h('div',{class:'card mb16',style:{textAlign:'center',padding:'24px',borderStyle:'dashed',borderColor:'var(--teal)'}},
       h('div',{style:{color:'var(--text2)',marginBottom:'10px'}},'まだ自己評価が提出されていません'),
-      btn('btn-primary','自己評価を始める →',()=>set({page:'self-eval',form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null}))
+      h('div',{class:'flex gap8',style:{flexWrap:'wrap'}},
+        btn('btn-primary','自己評価を始める →',()=>{
+          const draft=loadDraft();
+          if(draft&&draft.answers){
+            set({page:'self-eval',form:{step:draft.step||0,answers:draft.answers,profile:draft.profile||{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null});
+          } else {
+            set({page:'self-eval',form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null});
+          }
+        }),
+        loadDraft()&&h('button',{class:'btn btn-secondary btn-sm',style:{color:'var(--teal-d)',borderColor:'var(--teal)'},
+          onClick(){
+            if(confirm('保存されている下書きを削除しますか？')){clearDraft();schedRender();}
+          }
+        },'📝 下書きあり — 削除')
+      )
     ));
   }
 
@@ -924,7 +956,11 @@ function renderEvalForm(isSup){
   const u=S.user;
   const fd=S.form;
   if(!fd){
-    const defForm={step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}};
+    // 下書きがあれば自動で読み込む
+    const draft=!isSup?loadDraft():null;
+    const defForm=draft&&draft.answers
+      ? {step:draft.step||0,answers:draft.answers,profile:draft.profile||{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}}
+      : {step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}};
     S.form=defForm;schedRender();return h('div',null);
   }
   const{step,answers,profile}=fd;
@@ -954,12 +990,32 @@ function renderEvalForm(isSup){
   const sc=calcSc(_la);const g=getG(sc.total);
   const low=KIHON.filter((k,i)=>(_la.kihon[i]||0)===1).map(k=>k.training);
 
-  const prog=h('div',{class:'fprog'},...FORM_STEPS.map((_,i)=>h('div',{class:'fprog-s'+(i<step?' done':i===step?' now':'')})));
-  const navRow=h('div',{class:'fb',style:{marginTop:'16px',gap:'10px'}},
+  // 訪問済みステップ（step以下はすべてクリック可能）
+  const prog=h('div',{class:'fprog'},
+    ...FORM_STEPS.map((lbl,i)=>h('div',{
+      class:'fprog-s'+(i<step?' done':i===step?' now':'')+(i<=step?' clickable':''),
+      onClick(){ if(i<=step) upd({step:i}); }
+    },
+      h('div',{class:'fprog-bar'}),
+      h('div',{class:'fprog-lbl'},lbl)
+    ))
+  );
+  // 自動下書き保存（ステップ移動のたびに）
+  if(!isSup) saveDraft({step,answers:S.form?.answers||answers,profile:S.form?.profile||profile});
+
+  const navRow=h('div',{class:'fb',style:{marginTop:'16px',gap:'8px',flexWrap:'wrap'}},
     step>0?btn('btn-secondary','← 戻る',()=>upd({step:step-1})):h('span',null),
-    step<FORM_STEPS.length-1
-      ?h('button',{class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
-      :h('button',{class:'btn btn-primary',disabled:!allOk,onClick(){
+    h('div',{class:'flex gap8',style:{marginLeft:'auto'}},
+      !isSup&&h('button',{class:'btn btn-secondary btn-sm',style:{color:'var(--text3)'},
+        onClick(){
+          saveDraft({step,answers:S.form?.answers||answers,profile:S.form?.profile||profile});
+          toast('下書きを保存しました');
+          set({page:'dashboard',form:null});
+        }
+      },'💾 下書き保存して退出'),
+      step<FORM_STEPS.length-1
+        ?h('button',{class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
+        :h('button',{class:'btn btn-primary',disabled:!allOk,onClick(){
           if(!allOk)return;
           const _ans=S.form?.answers||answers;
           const _prf=S.form?.profile||profile;
@@ -986,10 +1042,12 @@ function renderEvalForm(isSup){
           const idx=DB.evaluations.findIndex(e=>e.id===ev.id);
           if(idx>=0)DB.evaluations[idx]=ev;else DB.evaluations.push(ev);
           save();
+          if(!isSup) clearDraft(); // 提出したら下書きを削除
           set({page:'history',form:null,evalEditId:null,splitSelf:null});
           toast(isSup?`${targetUser.name}さんの上司評価を提出しました`:'自己評価を提出しました');
         }},allOk?'提出する':'未入力があります')
-  );
+    ) // h('div',{class:'flex gap8'})
+  ); // navRow
 
   const stepsLbl={0:'基本情報',1:'基本行動 1/2',2:'基本行動 2/2',3:`職務遂行（${shLabel(profile.shokushu)}）`,4:'自己成長・学習',5:'目標管理',6:'振り返りコメント',7:'確認'};
   const subLbl={0:'評価期間を確認',1:'誠実・傾聴・協調 各10/5/1点',2:'責任感・接遇マナー 各10/5/1点',3:'職種別 30点満点',4:'全職種共通 30点満点',5:'40点満点',6:'任意記入',7:'内容を確認して提出'};
@@ -1830,56 +1888,86 @@ function renderModal(){
   }
 
   if(m.type==='cloud-config'){
-    let u=CLOUD.url, s=CLOUD.secret;
+    // input の値はDOM直接参照（再描画で消えないように）
+    const urlIn=h('input',{type:'text',id:'cfg-url',
+      value:CLOUD.url,
+      placeholder:'https://script.google.com/macros/s/AKfy.../exec'});
+    const secIn=h('input',{type:'text',id:'cfg-sec',
+      value:CLOUD.secret,
+      placeholder:'例: Ryujinkai@2025Hospital'});
+    const testEl=h('div',{id:'cloud-test',style:{fontSize:'12px',marginTop:'8px',padding:'7px 10px',borderRadius:'6px',display:'none'}});
+
+    function runTest(){
+      const url=(document.getElementById('cfg-url')||urlIn).value.trim();
+      const sec=(document.getElementById('cfg-sec')||secIn).value.trim();
+      if(!url||!sec){testEl.textContent='URLと秘密キーを入力してください';testEl.style.background='var(--red-l)';testEl.style.color='var(--red)';testEl.style.display='block';return;}
+      testEl.textContent='接続テスト中…';testEl.style.background='var(--blue-l)';testEl.style.color='var(--blue-d)';testEl.style.display='block';
+      // 一時的にCLOUDをセット
+      const prev=Object.assign({},CLOUD);
+      CLOUD={url,secret:sec};
+      loadFromCloud().then(data=>{
+        if(data&&data.users){
+          testEl.textContent='✅ 接続成功！データを取得しました。「保存」を押して確定してください。';
+          testEl.style.background='var(--teal-l)';testEl.style.color='var(--teal-d)';
+          // 成功データを一時保持
+          testEl.dataset.ok='1';
+          testEl.dataset.url=url;
+          testEl.dataset.sec=sec;
+        } else {
+          CLOUD=prev; // 失敗したら元に戻す
+          testEl.textContent='❌ 接続失敗。URLと秘密キーを確認してください。';
+          testEl.style.background='var(--red-l)';testEl.style.color='var(--red)';
+          testEl.dataset.ok='';
+        }
+      }).catch(()=>{
+        CLOUD=prev;
+        testEl.textContent='❌ 接続エラーが発生しました。';
+        testEl.style.background='var(--red-l)';testEl.style.color='var(--red)';
+        testEl.dataset.ok='';
+      });
+    }
+
     body=h('div',null,
       h('h3',{style:{marginBottom:'12px'}},'☁ クラウド接続設定'),
-      h('div',{style:{background:'var(--blue-l)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px',fontSize:'12px',color:'var(--blue-d)',lineHeight:'1.6'}},
-        IS_FILE_PROTOCOL
-          ? '⚠ ローカルファイル（file://）で開いているため、クラウド同期は使えません。GitHub PagesなどのURLで開いてください。'
-          : 'Google Apps Script の Web App URL と秘密キーを入力してください。設定後、全職員がこのURLを使えばデータが共有されます。'
-      ),
+      IS_FILE_PROTOCOL
+        ? h('div',{style:{background:'var(--amber-l)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px',fontSize:'12px',color:'var(--amber-d)'}},
+            '⚠ ローカルファイル（file://）では接続できません。GitHub Pages の URL で開いてください。')
+        : h('div',{style:{background:'var(--blue-l)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px',fontSize:'12px',color:'var(--blue-d)',lineHeight:'1.6'}},
+            'Google Apps Script の Web App URL と秘密キーを入力してください。'),
       h('div',{style:{display:'grid',gap:'10px',marginBottom:'14px'}},
         h('div',null,
           h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'Apps Script Web App URL'),
-          h('input',{type:'text',value:u,placeholder:'https://script.google.com/macros/s/AKfy.../exec',
-            onInput(e){u=e.target.value;}})
+          urlIn
         ),
         h('div',null,
-          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'秘密キー（GASコードの SECRET と同じ値）'),
-          h('input',{type:'text',value:s,placeholder:'CHANGE_THIS_SECRET_2025',
-            onInput(e){s=e.target.value;}})
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'秘密キー'),
+          secIn
         )
       ),
-      h('div',{class:'flex gap8'},
-        u&&s&&h('button',{class:'btn btn-secondary',
-          onClick(){
-            CLOUD={url:u.trim(),secret:s.trim()};saveCloudCfg();
-            // Test connection
-            const testEl=document.getElementById('cloud-test');
-            if(testEl){testEl.textContent='接続テスト中…';testEl.style.color='var(--blue-d)';}
-            loadFromCloud().then(data=>{
-              if(data){
-                if(testEl){testEl.textContent='✅ 接続成功！データを取得しました';testEl.style.color='var(--teal-d)';}
-                DB=data;saveDB(DB);
-                setTimeout(()=>set({modal:null,page:'dashboard'}),1200);
-              } else {
-                if(testEl){testEl.textContent='❌ 接続失敗。URLとキーを確認してください';testEl.style.color='var(--red)';}
-              }
-            });
-          }
-        },'🔌 接続テスト'),
-        h('div',{id:'cloud-test',style:{fontSize:'12px',marginLeft:'8px',paddingTop:'6px'}})
-      ),
-      h('div',{class:'flex gap8',style:{justifyContent:'flex-end',marginTop:'12px'}},
-        btn('btn-secondary','キャンセル',()=>set({modal:null})),
-        btn('btn-primary','保存',()=>{
-          CLOUD={url:u.trim(),secret:s.trim()};saveCloudCfg();
-          set({modal:null});toast('クラウド設定を保存しました');
-        }),
-        CLOUD.url&&btn('btn-danger btn-sm','接続を解除',()=>{
-          CLOUD={url:'',secret:''};saveCloudCfg();
-          set({modal:null});toast('クラウド接続を解除しました','warn');
-        })
+      testEl,
+      h('div',{class:'flex gap8',style:{justifyContent:'space-between',marginTop:'12px',flexWrap:'wrap'}},
+        h('div',{class:'flex gap8'},
+          btn('btn-secondary','🔌 接続テスト',runTest),
+          CLOUD.url&&btn('btn-danger btn-sm','接続を解除',()=>{
+            CLOUD={url:'',secret:''};saveCloudCfg();
+            set({modal:null});toast('クラウド接続を解除しました','warn');
+          })
+        ),
+        h('div',{class:'flex gap8'},
+          btn('btn-secondary','キャンセル',()=>set({modal:null})),
+          btn('btn-primary','保存',()=>{
+            const url=(document.getElementById('cfg-url')||urlIn).value.trim();
+            const sec=(document.getElementById('cfg-sec')||secIn).value.trim();
+            if(!url||!sec){alert('URLと秘密キーを入力してください');return;}
+            CLOUD={url,secret:sec};saveCloudCfg();
+            // 接続テスト成功済みならデータ取得
+            const te=document.getElementById('cloud-test');
+            if(te&&te.dataset.ok==='1'){
+              loadFromCloud().then(data=>{if(data&&data.users){DB=data;saveDB(DB);}});
+            }
+            set({modal:null});toast('クラウド設定を保存しました');
+          })
+        )
       )
     );
   }
