@@ -935,10 +935,7 @@ function barsBlock(items,vals,setter){
               e.currentTarget.classList.add(o.sel);
               e.currentTarget.querySelector('.opt-lbl')?.classList.add(o.lcl);
             }
-            setter(i,o.v);
-            // nextボタンの有効/無効だけ更新
-            const nb=document.querySelector('.fprog')?.parentElement?.querySelector('.btn-primary:last-child');
-            // ステートだけ更新、再描画はしない
+            setter(i,o.v); // setterの中でupdateNextBtn()が呼ばれる
           }
         },
           h('div',{class:'radio'}),
@@ -968,9 +965,22 @@ function renderEvalForm(isSup){
 
   function upd(ch){Object.assign(S.form,ch);schedRender();}
   // BARSクリック時は状態だけ更新（DOM直接操作済み）→ re-renderしない
-  function setK(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.kihon];k[i]=v;S.form.answers={...S.form.answers,kihon:k};}}
-  function setS(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.shokumu];k[i]=v;S.form.answers={...S.form.answers,shokumu:k};}}
-  function setG(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.seichou];k[i]=v;S.form.answers={...S.form.answers,seichou:k};}}
+  function setK(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.kihon];k[i]=v;S.form.answers={...S.form.answers,kihon:k};updateNextBtn();}}
+  function setS(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.shokumu];k[i]=v;S.form.answers={...S.form.answers,shokumu:k};updateNextBtn();}}
+  function setG(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.seichou];k[i]=v;S.form.answers={...S.form.answers,seichou:k};updateNextBtn();}}
+
+  // BARSクリック後に「次へ」ボタンのdisabledをDOMで直接更新
+  function updateNextBtn(){
+    const ok=stepOk();
+    // id='next-btn' を付けたボタンを直接更新
+    const nb=document.getElementById('next-btn');
+    if(nb){
+      nb.disabled=!ok;
+      nb.style.background=ok?'var(--teal)':'var(--border)';
+      nb.style.color=ok?'#fff':'var(--text3)';
+      nb.style.cursor=ok?'pointer':'not-allowed';
+    }
+  }
 
   function stepOk(){
     const a=S.form?.answers||answers;
@@ -1014,7 +1024,7 @@ function renderEvalForm(isSup){
         }
       },'💾 下書き保存して退出'),
       step<FORM_STEPS.length-1
-        ?h('button',{class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
+        ?h('button',{id:'next-btn',class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
         :h('button',{class:'btn btn-primary',disabled:!allOk,onClick(){
           if(!allOk)return;
           const _ans=S.form?.answers||answers;
