@@ -712,7 +712,8 @@ function renderSidebar(){
     {id:'dashboard',icon:'◉',l:'ダッシュボード'},
     {id:'self-eval',icon:'✎',l:'自己評価入力'},
     ...(CAN_SUPERVISE.includes(u.role)?[{id:'sup-eval',icon:'👥',l:'上司評価（他者評価）'}]:[]),
-    {id:'history',icon:'◷',l:'評価履歴・目標'},
+    {id:'goals',icon:'◎',l:'目標管理'},
+    {id:'history',icon:'◷',l:'評価履歴'},
   ];
   const nav2=isAdmin?[
     {id:'admin-approvals',icon:'✔',l:'承認管理'},
@@ -831,6 +832,34 @@ function renderDashboard(){
       ));
     }
   }
+
+  // 目標サマリー（ダッシュボード）
+  const myGoals=DB.goals.filter(g=>g.user_id===u.id&&g.status!=='completed');
+  els.push(h('div',{class:'card mb16'},
+    h('div',{class:'fb mb12'},
+      h('h3',null,'目標管理'),
+      btn('btn-secondary btn-sm no-print','目標一覧 →',()=>set({page:'goals'}))
+    ),
+    myGoals.length===0
+      ? h('div',{style:{textAlign:'center',padding:'16px',color:'var(--text3)',fontSize:'13px'}},
+          '目標が登録されていません　',
+          btn('btn-primary btn-sm','+ 目標を追加',()=>set({modal:{type:'add-goal',userId:u.id}}))
+        )
+      : h('div',{style:{display:'grid',gap:'8px'}},
+          ...myGoals.slice(0,3).map(gl=>h('div',null,
+            h('div',{class:'fb',style:{marginBottom:'4px'}},
+              h('span',{style:{fontSize:'13px',fontWeight:'500'}},gl.title),
+              h('span',{style:{fontSize:'11px',color:'var(--text3)'}}),`${gl.progress}%`
+            ),
+            h('div',{class:'pbar-bg'},
+              h('div',{class:'pbar-fill',style:{width:gl.progress+'%',background:'var(--teal)'}})
+            )
+          )),
+          myGoals.length>3&&h('div',{style:{fontSize:'12px',color:'var(--text3)',textAlign:'right',marginTop:'4px'}},
+            `他${myGoals.length-3}件`
+          )
+        )
+  ));
 
   // Eval cycle
   els.push(h('div',{class:'card'},
@@ -1223,12 +1252,85 @@ function renderSupEval(){
 // ═══════════════════════════════════════════════════
 // HISTORY + GOALS
 // ═══════════════════════════════════════════════════
+// ── 目標管理（独立ページ）──────────────────────────
+function renderGoals(){
+  const u=S.user;
+  const goals=DB.goals.filter(g=>g.user_id===u.id);
+  const active=goals.filter(g=>g.status!=='completed');
+  const done=goals.filter(g=>g.status==='completed');
+
+  function goalCard(gl){
+    return h('div',{class:'card mb8',style:{opacity:gl.status==='completed'?'0.72':'1'}},
+      h('div',{class:'fb mb8'},
+        h('div',null,
+          h('div',{style:{fontWeight:'500',fontSize:'13px',marginBottom:'2px'}},gl.title),
+          h('div',{class:'flex gap6'},
+            h('span',{class:'badge',style:{background:'var(--teal-l)',color:'var(--teal-d)',fontSize:'11px'}},gl.category),
+            h('span',{class:'muted'},`期限: ${gl.deadline}`)
+          )
+        ),
+        h('div',{class:'flex gap6'},
+          gl.status==='completed'&&h('span',{class:'badge',style:{background:'var(--teal-l)',color:'var(--teal-d)'}},'✓ 完了'),
+          btn('btn-secondary btn-xs no-print','編集',()=>set({modal:{type:'edit-goal',goal:Object.assign({},gl)}})),
+          btn('btn-danger btn-xs no-print','✕',()=>{
+            if(confirm('削除しますか？')){
+              DB.goals=DB.goals.filter(g=>g.id!==gl.id);save();schedRender();
+            }
+          })
+        )
+      ),
+      gl.memo&&h('div',{style:{fontSize:'12px',color:'var(--text2)',background:'var(--bg2)',borderRadius:'6px',padding:'6px 9px',marginBottom:'8px',lineHeight:'1.5'}},gl.memo),
+      h('div',{class:'flex gap8'},
+        h('input',{type:'range',min:'0',max:'100',step:'1',value:gl.progress,style:{flex:'1',accentColor:'var(--teal)'},
+          onInput(e){
+            const v=parseInt(e.target.value);
+            const i=DB.goals.findIndex(g=>g.id===gl.id);
+            if(i>=0){DB.goals[i].progress=v;DB.goals[i].status=v===100?'completed':'active';}
+            const lbl=e.target.nextElementSibling;if(lbl)lbl.textContent=v+'%';
+            debounceSave();
+          }
+        }),
+        h('span',{class:'prog-lbl',style:{fontSize:'12px',fontWeight:'500',minWidth:'38px',textAlign:'right',color:gl.progress===100?'var(--teal)':'var(--text2)'}},`${gl.progress}%`)
+      )
+    );
+  }
+
+  return h('div',null,
+    // ヘッダー
+    h('div',{class:'fb mb16'},
+      h('div',null,
+        h('h3',{style:{marginBottom:'3px'}},'目標管理'),
+        h('div',{class:'muted'},'行動目標を設定して進捗を管理します（4月設定・8月中間確認）')
+      ),
+      btn('btn-primary','+ 目標を追加',()=>set({modal:{type:'add-goal',userId:u.id}}))
+    ),
+    // 進行中
+    active.length>0&&h('div',null,
+      h('div',{style:{fontSize:'12px',fontWeight:'500',color:'var(--text3)',marginBottom:'8px'}},
+        `進行中 ${active.length}件`),
+      ...active.map(goalCard)
+    ),
+    // 完了済み
+    done.length>0&&h('div',{style:{marginTop:'16px'}},
+      h('div',{style:{fontSize:'12px',fontWeight:'500',color:'var(--text3)',marginBottom:'8px'}},
+        `完了済み ${done.length}件`),
+      ...done.map(goalCard)
+    ),
+    // 空の場合
+    goals.length===0&&h('div',{class:'card',style:{textAlign:'center',padding:'32px',borderStyle:'dashed',borderColor:'var(--teal)'}},
+      h('div',{style:{color:'var(--text3)',marginBottom:'12px'}},'目標が登録されていません'),
+      h('div',{style:{fontSize:'12px',color:'var(--text3)',marginBottom:'16px'}},'今年度の行動目標を3項目以内で設定してください'),
+      btn('btn-primary','+ 目標を追加',()=>set({modal:{type:'add-goal',userId:u.id}}))
+    )
+  );
+}
+
+// ── 評価履歴（目標管理を分離）────────────────────────
 function renderHistory(){
   const u=S.user;
   const evals=DB.evaluations.filter(e=>e.evaluatee_id===u.id).sort((a,b)=>b.submitted_at-a.submitted_at);
-  const goals=DB.goals.filter(g=>g.user_id===u.id);
   return h('div',{},
-    h('div',{class:'card mb16'},
+    h('div',{class:'card'},
       h('div',{class:'fb mb12'},
         h('h3',null,'評価提出履歴'),
         btn('btn-primary btn-sm no-print','+ 新規自己評価',()=>set({page:'self-eval',form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}},evalEditId:null}))
@@ -1253,40 +1355,6 @@ function renderHistory(){
                 );
               }))
             )
-          )
-    ),
-    h('div',{class:'card'},
-      h('div',{class:'fb mb12'},
-        h('h3',null,'目標管理'),
-        btn('btn-primary btn-sm no-print','+ 目標追加',()=>set({modal:{type:'add-goal',userId:u.id}}))
-      ),
-      goals.length===0
-        ? h('div',{style:{textAlign:'center',padding:'20px',color:'var(--text3)'}},'目標が登録されていません')
-        : h('div',{style:{display:'grid',gap:'8px'}},
-            ...goals.map(gl=>h('div',{style:{padding:'9px 11px',border:'0.5px solid var(--border)',borderRadius:'8px',opacity:gl.status==='completed'?'0.7':'1'}},
-              h('div',{class:'fb mb6'},
-                h('span',{style:{fontWeight:'500',fontSize:'13px'}},gl.title),
-                h('div',{class:'flex gap6'},
-                  h('span',{class:'badge',style:{background:'var(--teal-l)',color:'var(--teal-d)'}},gl.category),
-                  h('span',{class:'muted'},`〆${gl.deadline}`),
-                  btn('btn-secondary btn-xs no-print','✕',()=>{DB.goals=DB.goals.filter(g=>g.id!==gl.id);save();schedRender();})
-                )
-              ),
-              h('div',{class:'flex gap8'},
-                h('input',{type:'range',min:'0',max:'100',step:'1',value:gl.progress,style:{flex:'1',accentColor:'var(--teal)'},
-                  onInput(e){
-                    const v=parseInt(e.target.value);
-                    const i=DB.goals.findIndex(g=>g.id===gl.id);
-                    if(i>=0){DB.goals[i].progress=v;DB.goals[i].status=v===100?'completed':'active';}
-                    // スライダーはUI更新のみ、保存はデバウンス
-                    e.target.closest('[data-progress]')&&(e.target.closest('[data-progress]').textContent=v+'%');
-                    const lbl=e.target.parentElement.querySelector('.prog-lbl');
-                    if(lbl)lbl.textContent=v+'%';
-                    debounceSave();
-                  }}),
-                h('span',{style:{fontSize:'12px',fontWeight:'500',minWidth:'38px',textAlign:'right',color:gl.progress===100?'var(--teal)':'var(--text2)'}},`${gl.progress}%`)
-              )
-            ))
           )
     )
   );
@@ -1640,25 +1708,52 @@ function renderModal(){
     );
   }
 
-  if(m.type==='add-goal'){
-    let gf={title:'',category:'誠実',deadline:''};
+  if(m.type==='add-goal'||m.type==='edit-goal'){
+    const isEditGoal=m.type==='edit-goal';
+    let gf=isEditGoal
+      ? {title:m.goal.title,category:m.goal.category,deadline:m.goal.deadline,progress:m.goal.progress||0,memo:m.goal.memo||''}
+      : {title:'',category:'誠実',deadline:'',progress:0,memo:''};
     body=h('div',null,
-      h('h3',{style:{marginBottom:'10px'}},'目標を追加'),
+      h('h3',{style:{marginBottom:'12px'}},isEditGoal?'目標を編集':'目標を追加'),
       h('div',{style:{display:'grid',gap:'9px',marginBottom:'12px'}},
-        h('input',{type:'text',placeholder:'目標タイトル',onInput(e){gf.title=e.target.value;}}),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'目標タイトル'),
+          h('input',{type:'text',value:gf.title,placeholder:'例: 患者説明スキルの向上',onInput(e){gf.title=e.target.value;}})
+        ),
         h('div',{class:'g2'},
-          h('select',{onChange(e){gf.category=e.target.value;}},
-            ...['誠実','傾聴','協調','職務遂行','自己成長'].map(c=>h('option',{value:c},c))
+          h('div',null,
+            h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'カテゴリ'),
+            h('select',{value:gf.category,onChange(e){gf.category=e.target.value;}},
+              ...['誠実','傾聴','協調','職務遂行','自己成長'].map(c=>h('option',{value:c,selected:c===gf.category},c))
+            )
           ),
-          h('input',{type:'date',onInput(e){gf.deadline=e.target.value;}})
+          h('div',null,
+            h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'期限'),
+            h('input',{type:'date',value:gf.deadline,onInput(e){gf.deadline=e.target.value;}})
+          )
+        ),
+        isEditGoal&&h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'進捗（'+gf.progress+'%）'),
+          h('input',{type:'range',min:'0',max:'100',step:'1',value:gf.progress,style:{width:'100%',accentColor:'var(--teal)'},
+            onInput(e){gf.progress=parseInt(e.target.value);const l=e.target.previousElementSibling;if(l)l.textContent='進捗（'+e.target.value+'%）';}
+          })
+        ),
+        h('div',null,
+          h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'メモ（任意）'),
+          h('textarea',{value:gf.memo,placeholder:'目標の詳細や取り組み方針など',style:{minHeight:'60px'},onInput(e){gf.memo=e.target.value;}},gf.memo)
         )
       ),
       h('div',{class:'flex gap8',style:{justifyContent:'flex-end'}},
         btn('btn-secondary','キャンセル',()=>set({modal:null})),
-        btn('btn-primary','追加する',()=>{
+        btn('btn-primary',isEditGoal?'保存する':'追加する',()=>{
           if(!gf.title||!gf.deadline){alert('タイトルと期限を入力してください');return;}
-          DB.goals.push({id:uid(),user_id:m.userId,...gf,progress:0,status:'active',created_at:Date.now()});
-          save();set({modal:null});toast('目標を追加しました');
+          if(isEditGoal){
+            const i=DB.goals.findIndex(g=>g.id===m.goal.id);
+            if(i>=0){DB.goals[i]={...DB.goals[i],...gf,status:gf.progress===100?'completed':'active'};}
+          } else {
+            DB.goals.push({id:uid(),user_id:m.userId,...gf,status:'active',created_at:Date.now()});
+          }
+          save();set({modal:null});toast(isEditGoal?'目標を更新しました':'目標を追加しました');
         })
       )
     );
@@ -1802,7 +1897,8 @@ const PAGE_TITLES={
   'dashboard':'ダッシュボード',
   'self-eval':'自己評価入力',
   'sup-eval':'上司評価（他者評価）',
-  'history':'評価履歴・目標管理',
+  'goals':'目標管理',
+  'history':'評価履歴',
   'admin-approvals':'承認管理',
   'admin-dashboard':'集計・分析ダッシュボード',
   'admin-export':'エクスポート・ガイド',
@@ -1816,6 +1912,7 @@ function renderPageContent(){
   switch(S.page){
     case 'dashboard':       return renderDashboard();
     case 'self-eval':       return renderEvalForm(false);
+    case 'goals':           return renderGoals();
     case 'history':         return renderHistory();
     case 'change-pw':       return renderChangePw();
     case 'admin-approvals': return renderAdminApprovals();
