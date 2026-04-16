@@ -44,6 +44,10 @@ textarea{resize:vertical;min-height:68px}
 .muted{color:var(--text3);font-size:12px}
 .sm{font-size:12px}
 .pbar-bg{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden}
+.pw-wrap{position:relative;width:100%}
+.pw-wrap input{padding-right:36px}
+.pw-toggle{position:absolute;right:0;top:0;height:100%;width:36px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--text3);font-size:16px;padding:0}
+.pw-toggle:hover{color:var(--text2)}
 .pbar-fill{height:6px;border-radius:4px;transition:width .4s}
 /* Layout */
 #layout{display:flex;height:100vh;overflow:hidden}
@@ -141,7 +145,37 @@ textarea{resize:vertical;min-height:68px}
 <body>
 <div id="app"></div>
 <script>
-'use strict';
+// 全エラーを画面に表示（デバッグ）
+window.onerror=function(msg,src,line,col,err){
+  var app=document.getElementById('app');
+  if(!app)return;
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;top:0;left:0;right:0;background:#FCEBEB;color:#A32D2D;padding:16px;font-size:13px;z-index:9999;border-bottom:2px solid #E24B4A;font-family:monospace;white-space:pre-wrap;';
+  d.textContent='エラー: '+msg+'\n行: '+line+'\n'+src;
+  document.body.appendChild(d);
+};
+window.onunhandledrejection=function(e){
+  var app=document.getElementById('app');
+  var d=document.createElement('div');
+  d.style.cssText='position:fixed;top:40px;left:0;right:0;background:#FAEEDA;color:#854F0B;padding:16px;font-size:13px;z-index:9999;border-bottom:2px solid #BA7517;font-family:monospace;';
+  d.textContent='非同期エラー: '+(e.reason?.message||e.reason||'unknown');
+  document.body.appendChild(d);
+};
+
+// パスワード入力＋表示トグルのヘルパー
+function pwField(id, placeholder, onInputCb){
+  var inp = h('input',{type:'password', id:id||'', placeholder:placeholder||''});
+  if(onInputCb) inp.addEventListener('input', function(e){onInputCb(e);});
+  var toggle = h('button',{class:'pw-toggle',type:'button',title:'パスワードを表示/非表示',
+    onClick:function(){
+      inp.type = inp.type==='password' ? 'text' : 'password';
+      toggle.textContent = inp.type==='password' ? '👁' : '🙈';
+    }
+  },'👁');
+  var wrap = h('div',{class:'pw-wrap'}, inp, toggle);
+  return wrap;
+}
+
 // ═══════════════════════════════════════════════════
 // CLOUD CONFIG (管理者がUIから設定)
 // ═══════════════════════════════════════════════════
@@ -154,8 +188,12 @@ function saveCloudCfg(){ localStorage.setItem(CFG_KEY, JSON.stringify(CLOUD)); }
 
 let syncStatus = 'local'; // 'local' | 'syncing' | 'synced' | 'error'
 
+// file:// プロトコルかどうかを検出
+const IS_FILE_PROTOCOL = typeof location !== 'undefined' && location.protocol === 'file:';
+
 async function loadFromCloud(){
   if(!CLOUD.url||!CLOUD.secret) return null;
+  if(IS_FILE_PROTOCOL){ return null; } // file://ではfetch不可
   try {
     const r = await fetch(CLOUD.url+'?secret='+encodeURIComponent(CLOUD.secret)+'&action=load');
     if(!r.ok) return null;
@@ -167,6 +205,7 @@ async function loadFromCloud(){
 
 async function saveToCloud(db){
   if(!CLOUD.url||!CLOUD.secret) return false;
+  if(IS_FILE_PROTOCOL){ return false; } // file://ではfetch不可
   try {
     const r = await fetch(CLOUD.url, {
       method:'POST',
@@ -212,6 +251,9 @@ const CAN_APPROVE1 =['sysadmin','jimucho','head'];
 const CAN_APPROVE2 =['sysadmin','jimucho'];
 const CAN_ALL_DEPTS=['sysadmin','incho','jimucho'];
 const CAN_MANAGE_USERS=['sysadmin','jimucho'];
+
+// 固定部署リスト
+const DEPTS=['事務局','診療部','看護部','事務部','リハビリ部門','栄養部門','居宅','ヘルパー','その他'];
 
 const SHOKUSHU=[
   {id:'kango', label:'看護職（看護師・准看護師）', icon:'👩‍⚕️'},
@@ -312,14 +354,10 @@ let DB=loadDB();
 })();
 
 function save(){
+  // 即座にlocalStorageに保存（軽い）
   saveDB(DB);
-  // Async sync to cloud
-  syncStatus='syncing';
-  updateSyncBadge();
-  saveToCloud(DB).then(ok=>{
-    syncStatus = ok ? 'synced' : (CLOUD.url ? 'error' : 'local');
-    updateSyncBadge();
-  });
+  // クラウド同期はデバウンスで遅延（重い処理を入力のたびに走らせない）
+  debounceSave();
 }
 
 function updateSyncBadge(){
@@ -370,16 +408,16 @@ function gBadge(g){return span('badge g'+g,g);}
 function gColor(g){return(GRADE_DEF.find(x=>x.g===g)||GRADE_DEF[4]).color;}
 function gBg(g){return(GRADE_DEF.find(x=>x.g===g)||GRADE_DEF[4]).bg;}
 
-// Dept staff count
-function deptCount(dept){return DB.users.filter(u=>u.dept===dept&&u.role==='staff').length;}
-function isSingleDept(dept){return deptCount(dept)===1;}
+// 所属長がいない部署かどうか（＝事務長が評価担当）
+function hasHead(dept){return !!DB.users.find(u=>u.dept===dept&&u.role==='head');}
+function deptNeedsJimucho(dept){return !hasHead(dept);}
 
-// Who should do supervisor eval for a staff member
+// 誰が上司評価を担当するか
 function supervisorOf(staffUser){
-  // Find head of same dept
+  // 同部署の所属長を探す
   const head=DB.users.find(u=>u.dept===staffUser.dept&&u.role==='head');
   if(head)return head;
-  // Single-person dept or no head → jimucho evaluates
+  // 所属長がいない部署 → 事務長が評価
   const jimu=DB.users.find(u=>u.role==='jimucho');
   return jimu||null;
 }
@@ -401,10 +439,32 @@ let S={
   splitSelf:null,   // self-eval shown in left pane of supervisor eval
   evalEditId:null,
 };
-function set(u){Object.assign(S,u);render();}
+// ── パフォーマンス対策 ──────────────────────────────
+let _rafPending=false;
+function schedRender(){
+  if(_rafPending)return;
+  _rafPending=true;
+  setTimeout(function(){_rafPending=false;render();},0);
+}
+
+let _saveTimer=null;
+function debounceSave(){
+  if(_saveTimer)clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(()=>{
+    saveDB(DB);
+    if(!IS_FILE_PROTOCOL && CLOUD.url && CLOUD.secret){
+      saveToCloud(DB).then(ok=>{
+        syncStatus=ok?'synced':(CLOUD.url?'error':'local');
+        updateSyncBadge();
+      }).catch(()=>{ syncStatus='error'; updateSyncBadge(); });
+    }
+  },800);
+}
+
+function set(u){Object.assign(S,u);schedRender();}
 function toast(msg,type='ok'){
-  S.toast={msg,type};render();
-  setTimeout(()=>{S.toast=null;render();},3000);
+  S.toast={msg,type};schedRender();
+  setTimeout(()=>{S.toast=null;schedRender();},3000);
 }
 
 // ═══════════════════════════════════════════════════
@@ -612,15 +672,22 @@ function renderLogin(){
       ),
       h('div',{style:{display:'grid',gap:'10px'}},
         (() => {
-          let name='',pw='';
-          const nameIn=h('input',{type:'text',placeholder:'氏名を入力',onInput(e){name=e.target.value;}});
-          const pwIn=h('input',{type:'password',placeholder:'パスワードを入力',onInput(e){pw=e.target.value;}});
-          const errEl=h('div',{style:{fontSize:'12px',color:'var(--red)',display:'none',padding:'6px 8px',background:'var(--red-l)',borderRadius:'6px'}});
+          const nameIn=h('input',{type:'text',id:'login-name',placeholder:'氏名を入力'});
+          const pwIn=pwField('login-pw','パスワードを入力');
+          const errEl=h('div',{id:'login-err',style:{fontSize:'12px',color:'var(--red)',display:'none',padding:'6px 8px',background:'var(--red-l)',borderRadius:'6px'}});
           const loginBtn=h('button',{class:'btn btn-primary',style:{width:'100%',marginTop:'4px'},
             onClick(){
-              const u=DB.users.find(x=>x.name===name.trim()&&x.password===pw);
-              if(!u){errEl.textContent='氏名またはパスワードが正しくありません';errEl.style.display='block';return;}
-              errEl.style.display='none';
+              var nameVal=(document.getElementById('login-name')||{}).value||'';
+              var pwVal=(document.getElementById('login-pw')||{}).value||'';
+              var u=null;
+              for(var i=0;i<DB.users.length;i++){
+                if(DB.users[i].name===nameVal.trim()&&DB.users[i].password===pwVal){u=DB.users[i];break;}
+              }
+              if(!u){
+                var e=document.getElementById('login-err');
+                if(e){e.textContent='氏名またはパスワードが正しくありません';e.style.display='block';}
+                return;
+              }
               set({screen:'app',user:u,page:'dashboard',form:null,splitSelf:null});
             }
           },'ログイン');
@@ -726,7 +793,7 @@ function renderDashboard(){
     const myDept=u.role==='head'?u.dept:null;
     const targets=myDept
       ? DB.users.filter(x=>x.dept===myDept&&x.role==='staff')
-      : DB.users.filter(x=>isSingleDept(x.dept)&&x.role==='staff');
+      : DB.users.filter(x=>deptNeedsJimucho(x.dept)&&x.role==='staff');
     const pending=targets.filter(t=>{
       const selfEv=DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='self'&&e.status!=='draft');
       const supEv =DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='supervisor');
@@ -778,7 +845,7 @@ function renderDashboard(){
       )
     )
   ));
-  return h('div',{id:'content'},...els);
+  return h('div',{},...els);
 }
 
 // ═══════════════════════════════════════════════════
@@ -788,12 +855,30 @@ function barsBlock(items,vals,setter){
   return items.map((item,i)=>{
     const v=vals[i]||0;
     const opts=[{v:10,sel:'sel10',lcl:'lbl10',lbl:'10点 — 非常に良い'},{v:5,sel:'sel5',lcl:'lbl5',lbl:'5点 — 概ね良い'},{v:1,sel:'sel1',lcl:'lbl1',lbl:'1点 — 改善必要'}];
-    return h('div',{class:'bars-q'},
-      h('div',{class:'bars-title'},h('span',{style:{color:'var(--text3)',fontSize:'11px',marginRight:'4px'}},`${i+1}.`),item.label),
+    const qId='bq-'+i+'-'+item.label.slice(0,4).replace(/\s/g,'');
+    return h('div',{class:'bars-q',id:qId},
+      h('div',{class:'bars-title'},h('span',{style:{color:'var(--text3)',fontSize:'11px',marginRight:'4px'}},(i+1)+'.'),item.label),
       h('div',{class:'bars-opts'},
         ...opts.map(o=>h('button',{
           class:'bars-opt '+(v===o.v?o.sel:''),
-          onClick(){setter(i,o.v);}
+          'data-qid':qId,'data-val':String(o.v),'data-sel':o.sel,'data-lcl':o.lcl,
+          onClick(e){
+            // DOM直接更新（再描画なし）
+            const wrap=document.getElementById(qId);
+            if(wrap){
+              wrap.querySelectorAll('.bars-opt').forEach(btn=>{
+                btn.classList.remove('sel10','sel5','sel1');
+                btn.querySelector('.opt-lbl')?.classList.remove('lbl10','lbl5','lbl1');
+                btn.querySelector('.radio')?.classList.remove('sel10','sel5','sel1');
+              });
+              e.currentTarget.classList.add(o.sel);
+              e.currentTarget.querySelector('.opt-lbl')?.classList.add(o.lcl);
+            }
+            setter(i,o.v);
+            // nextボタンの有効/無効だけ更新
+            const nb=document.querySelector('.fprog')?.parentElement?.querySelector('.btn-primary:last-child');
+            // ステートだけ更新、再描画はしない
+          }
         },
           h('div',{class:'radio'}),
           h('div',null,
@@ -811,28 +896,34 @@ function renderEvalForm(isSup){
   const fd=S.form;
   if(!fd){
     const defForm={step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:u.shokushu}};
-    S.form=defForm;render();return h('div',null);
+    S.form=defForm;schedRender();return h('div',null);
   }
   const{step,answers,profile}=fd;
   const shQ=SHOKUMU[profile.shokushu]||SHOKUMU.other;
 
-  function upd(ch){Object.assign(S.form,ch);render();}
-  function setK(i,v){const k=[...answers.kihon];k[i]=v;upd({answers:{...answers,kihon:k}});}
-  function setS(i,v){const k=[...answers.shokumu];k[i]=v;upd({answers:{...answers,shokumu:k}});}
-  function setG(i,v){const k=[...answers.seichou];k[i]=v;upd({answers:{...answers,seichou:k}});}
+  function upd(ch){Object.assign(S.form,ch);schedRender();}
+  // BARSクリック時は状態だけ更新（DOM直接操作済み）→ re-renderしない
+  function setK(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.kihon];k[i]=v;S.form.answers={...S.form.answers,kihon:k};}}
+  function setS(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.shokumu];k[i]=v;S.form.answers={...S.form.answers,shokumu:k};}}
+  function setG(i,v){if(S.form&&S.form.answers){const k=[...S.form.answers.seichou];k[i]=v;S.form.answers={...S.form.answers,seichou:k};}}
 
   function stepOk(){
-    if(step===0)return!!profile.period?.trim();
-    if(step===1)return answers.kihon.slice(0,3).every(v=>v>0);
-    if(step===2)return answers.kihon.slice(3).every(v=>v>0);
-    if(step===3)return answers.shokumu.every(v=>v>0);
-    if(step===4)return answers.seichou.every(v=>v>0);
+    const a=S.form?.answers||answers;
+    const p=S.form?.profile||profile;
+    if(step===0)return!!p.period?.trim();
+    if(step===1)return a.kihon.slice(0,3).every(v=>v>0);
+    if(step===2)return a.kihon.slice(3).every(v=>v>0);
+    if(step===3)return a.shokumu.every(v=>v>0);
+    if(step===4)return a.seichou.every(v=>v>0);
     if(step===5)return true; // 0点も有効
     return true;
   }
-  const allOk=[...answers.kihon,...answers.shokumu,...answers.seichou].every(v=>v>0)&&answers.mokuhyo!==null&&answers.mokuhyo!==undefined&&profile.period?.trim();
-  const sc=calcSc(answers);const g=getG(sc.total);
-  const low=KIHON.filter((k,i)=>answers.kihon[i]===1).map(k=>k.training);
+  // allOkはS.form.answersから常に最新を読む
+  const _fa=S.form?.answers||answers;
+  const allOk=[..._fa.kihon,..._fa.shokumu,..._fa.seichou].every(v=>v>0)&&_fa.mokuhyo!==null&&_fa.mokuhyo!==undefined&&(S.form?.profile?.period||profile.period)?.trim();
+  const _la=S.form?.answers||answers;
+  const sc=calcSc(_la);const g=getG(sc.total);
+  const low=KIHON.filter((k,i)=>(_la.kihon[i]||0)===1).map(k=>k.training);
 
   const prog=h('div',{class:'fprog'},...FORM_STEPS.map((_,i)=>h('div',{class:'fprog-s'+(i<step?' done':i===step?' now':'')})));
   const navRow=h('div',{class:'fb',style:{marginTop:'16px',gap:'10px'}},
@@ -841,7 +932,9 @@ function renderEvalForm(isSup){
       ?h('button',{class:'btn btn-primary',disabled:!stepOk(),onClick(){if(stepOk())upd({step:step+1});}},'次へ →')
       :h('button',{class:'btn btn-primary',disabled:!allOk,onClick(){
           if(!allOk)return;
-          const sc2=calcSc(answers);const g2=getG(sc2.total);
+          const _ans=S.form?.answers||answers;
+          const _prf=S.form?.profile||profile;
+          const sc2=calcSc(_ans);const g2=getG(sc2.total);
           const targetUser=fd.targetUser||u;
           const ev={
             id:S.evalEditId||uid(),
@@ -849,12 +942,12 @@ function renderEvalForm(isSup){
             evaluatee_id:targetUser.id,
             evaluatee_name:targetUser.name,
             evaluatee_dept:targetUser.dept,
-            evaluatee_shokushu:profile.shokushu||targetUser.shokushu,
+            evaluatee_shokushu:_prf.shokushu||targetUser.shokushu,
             evaluator_id:u.id,
             evaluator_name:u.name,
             evaluator_role:u.role,
-            period:profile.period,
-            answers:{...answers},
+            period:_prf.period,
+            answers:{..._ans},
             grade:g2.g,
             status:'submitted',
             submitted_at:Date.now(),
@@ -926,7 +1019,9 @@ function renderEvalForm(isSup){
             onInput(e){
               const v=parseInt(e.target.value)||0;
               const ni=document.getElementById('m-num');if(ni)ni.value=v;
-              upd({answers:{...answers,mokuhyo:v}});
+              const gd=document.getElementById('m-grade');
+              if(gd){const gg=v>=37?'S':v>=30?'A':v>=23?'B':v>=16?'C':'D';gd.textContent=gg+'  '+v+'点 / 40点';}
+              if(S.form&&S.form.answers)S.form.answers.mokuhyo=v;
             }
           }),
           h('input',{type:'number',min:'0',max:'40',step:'1',value:pts,id:'m-num',style:{width:'74px',fontSize:'20px',fontWeight:'700',textAlign:'center',padding:'6px 4px',color:'#7F77DD',border:'1.5px solid #7F77DD',borderRadius:'7px'},
@@ -935,20 +1030,18 @@ function renderEvalForm(isSup){
               if(isNaN(v)||v<0)v=0;if(v>40)v=40;
               e.target.value=v;
               const sl=document.getElementById('m-slider');if(sl)sl.value=v;
-              upd({answers:{...answers,mokuhyo:v}});
+              const gd=document.getElementById('m-grade');
+              if(gd){const gg=v>=37?'S':v>=30?'A':v>=23?'B':v>=16?'C':'D';gd.textContent=gg+'  '+v+'点 / 40点';}
+              if(S.form&&S.form.answers)S.form.answers.mokuhyo=v;
             }
           }),
           h('span',{style:{fontSize:'13px',color:'var(--text3)'}},'/ 40点')
         )
       ),
-      h('div',{style:{background:gg.bg,border:`1.5px solid ${gg.c}`,borderRadius:'8px',padding:'10px 14px',display:'flex',alignItems:'center',gap:'16px'}},
+      h('div',{id:'m-grade-wrap',style:{background:gg.bg,border:`1.5px solid ${gg.c}`,borderRadius:'8px',padding:'10px 14px',display:'flex',alignItems:'center',gap:'16px'}},
         h('div',{style:{textAlign:'center',minWidth:'50px'}},
-          h('div',{style:{fontSize:'32px',fontWeight:'700',color:gg.c}},gg.g),
+          h('div',{id:'m-grade',style:{fontSize:'28px',fontWeight:'700',color:gg.c}},gg.g+'  '+pts+'点 / 40点'),
           h('div',{style:{fontSize:'10px',color:gg.c}},'評価グレード')
-        ),
-        h('div',null,
-          h('div',{style:{fontSize:'18px',fontWeight:'600',color:gg.c}},`${pts}点 / 40点`),
-          h('div',{style:{fontSize:'11px',color:gg.c,marginTop:'2px'}},gRef.find(x=>x.g===gg.g)?.r+'点の範囲')
         )
       ),
       navRow
@@ -957,11 +1050,11 @@ function renderEvalForm(isSup){
     body=h('div',null,
       h('div',{style:{marginBottom:'11px'}},
         h('label',{style:{fontSize:'12px',fontWeight:'500',display:'block',marginBottom:'5px'}},'成長を感じたこと・取り組みの成果'),
-        h('textarea',{onInput(e){upd({answers:{...answers,growth_text:e.target.value}});}},answers.growth_text)
+        h('textarea',{onInput(e){S.form&&S.form.answers&&(S.form.answers.growth_text=e.target.value);}},answers.growth_text)
       ),
       h('div',null,
         h('label',{style:{fontSize:'12px',fontWeight:'500',display:'block',marginBottom:'5px'}},'今後、特に取り組みたいこと'),
-        h('textarea',{onInput(e){upd({answers:{...answers,next_text:e.target.value}});}},answers.next_text)
+        h('textarea',{onInput(e){S.form&&S.form.answers&&(S.form.answers.next_text=e.target.value);}},answers.next_text)
       ),navRow
     );
   } else {
@@ -988,8 +1081,8 @@ function renderEvalForm(isSup){
       ),
       ...KIHON.map((k,i)=>h('div',{style:{display:'flex',justifyContent:'space-between',fontSize:'11px',padding:'4px 0',borderBottom:'0.5px solid var(--border)'}},
         h('span',{style:{color:'var(--text2)'}},k.label),
-        h('span',{style:{fontWeight:'500',color:answers.kihon[i]===10?'#1D9E75':answers.kihon[i]===5?'#378ADD':answers.kihon[i]===1?'#BA7517':'var(--text3)'}},
-          answers.kihon[i]?`${answers.kihon[i]}点`:'未入力')
+        h('span',{style:{fontWeight:'500',color:_la.kihon[i]===10?'#1D9E75':_la.kihon[i]===5?'#378ADD':_la.kihon[i]===1?'#BA7517':'var(--text3)'}},
+          _la.kihon[i]?`${_la.kihon[i]}点`:'未入力')
       )),
       navRow
     );
@@ -1063,11 +1156,14 @@ function renderSupEval(){
   if(!S.form){
     // Show selection screen
     const u=S.user;
+    // 所属長 → 自部署のstaff、事務長 → 所属長のいない部署のstaff全員
     const candidates=u.role==='head'
       ? DB.users.filter(x=>x.dept===u.dept&&x.role==='staff')
-      : DB.users.filter(x=>x.id!==u.id&&['staff','head'].includes(x.role));
+      : u.role==='jimucho'||u.role==='sysadmin'
+        ? DB.users.filter(x=>x.role==='staff'&&deptNeedsJimucho(x.dept))
+        : DB.users.filter(x=>x.id!==u.id&&['staff','head'].includes(x.role));
 
-    return h('div',{id:'content'},
+    return h('div',{},
       h('div',{class:'card'},
         h('div',{style:{marginBottom:'14px'}},
           h('h3',{style:{marginBottom:'3px'}},'上司評価（他者評価）'),
@@ -1131,7 +1227,7 @@ function renderHistory(){
   const u=S.user;
   const evals=DB.evaluations.filter(e=>e.evaluatee_id===u.id).sort((a,b)=>b.submitted_at-a.submitted_at);
   const goals=DB.goals.filter(g=>g.user_id===u.id);
-  return h('div',{id:'content'},
+  return h('div',{},
     h('div',{class:'card mb16'},
       h('div',{class:'fb mb12'},
         h('h3',null,'評価提出履歴'),
@@ -1173,12 +1269,21 @@ function renderHistory(){
                 h('div',{class:'flex gap6'},
                   h('span',{class:'badge',style:{background:'var(--teal-l)',color:'var(--teal-d)'}},gl.category),
                   h('span',{class:'muted'},`〆${gl.deadline}`),
-                  btn('btn-secondary btn-xs no-print','✕',()=>{DB.goals=DB.goals.filter(g=>g.id!==gl.id);save();render();})
+                  btn('btn-secondary btn-xs no-print','✕',()=>{DB.goals=DB.goals.filter(g=>g.id!==gl.id);save();schedRender();})
                 )
               ),
               h('div',{class:'flex gap8'},
                 h('input',{type:'range',min:'0',max:'100',step:'1',value:gl.progress,style:{flex:'1',accentColor:'var(--teal)'},
-                  onInput(e){const i=DB.goals.findIndex(g=>g.id===gl.id);if(i>=0){DB.goals[i].progress=parseInt(e.target.value);DB.goals[i].status=parseInt(e.target.value)===100?'completed':'active';}save();render();}}),
+                  onInput(e){
+                    const v=parseInt(e.target.value);
+                    const i=DB.goals.findIndex(g=>g.id===gl.id);
+                    if(i>=0){DB.goals[i].progress=v;DB.goals[i].status=v===100?'completed':'active';}
+                    // スライダーはUI更新のみ、保存はデバウンス
+                    e.target.closest('[data-progress]')&&(e.target.closest('[data-progress]').textContent=v+'%');
+                    const lbl=e.target.parentElement.querySelector('.prog-lbl');
+                    if(lbl)lbl.textContent=v+'%';
+                    debounceSave();
+                  }}),
                 h('span',{style:{fontSize:'12px',fontWeight:'500',minWidth:'38px',textAlign:'right',color:gl.progress===100?'var(--teal)':'var(--text2)'}},`${gl.progress}%`)
               )
             ))
@@ -1204,8 +1309,15 @@ function renderAdminUsers(){
       ),
       h('div',{style:{overflowX:'auto'}},
         h('table',{class:'tbl'},
-          h('thead',null,h('tr',null,...['氏名','所属','職種','役割','生年月日','操作'].map(l=>h('th',null,l)))),
-          h('tbody',null,...users.map(u=>h('tr',null,
+          h('thead',null,h('tr',null,...['氏名','所属','職種','役割','生年月日','評価担当','操作'].map(l=>h('th',null,l)))),
+          h('tbody',null,...users.map(u=>{
+            // 一般職員の評価担当を表示
+            const evalBy = u.role==='staff'
+              ? (hasHead(u.dept)
+                  ? (DB.users.find(x=>x.dept===u.dept&&x.role==='head')?.name||'所属長')
+                  : '事務長')
+              : '—';
+            return h('tr',null,
             h('td',{style:{fontWeight:'500'}},u.name),
             h('td',null,u.dept),
             h('td',null,shLabel(u.shokushu)),
@@ -1217,14 +1329,15 @@ function renderAdminUsers(){
                 if(confirm(u.name+'のパスワードを誕生日（'+u.birthdate.replace(/-/g,'')+'）に初期化しますか？')){
                   const i=DB.users.findIndex(x=>x.id===u.id);
                   if(i>=0){DB.users[i].password=u.birthdate.replace(/-/g,'');}
-                  save();render();toast(u.name+'のパスワードを初期化しました');
+                  save();schedRender();toast(u.name+'のパスワードを初期化しました');
                 }
               }),
               u.id!=='seed-sys'&&btn('btn-danger btn-xs','削除',()=>{
-                if(confirm(u.name+'を削除しますか？')){DB.users=DB.users.filter(x=>x.id!==u.id);save();render();}
+                if(confirm(u.name+'を削除しますか？')){DB.users=DB.users.filter(x=>x.id!==u.id);save();schedRender();}
               })
-            ))
-          )))
+            )),
+            h('td',{style:{fontSize:'11px',color:hasHead(u.dept)||u.role!=='staff'?'var(--text3)':'var(--amber-d)'}},evalBy)
+          );}))
         )
       )
     )
@@ -1270,14 +1383,14 @@ function renderAdminApprovals(){
           if(confirm('差し戻しますか？')){
             const i=DB.evaluations.findIndex(e=>e.id===ev.id);
             if(i>=0){DB.evaluations[i].status='rejected';}
-            save();render();toast('差し戻しました','warn');
+            save();schedRender();toast('差し戻しました','warn');
           }
         })
       )
     );
   }
 
-  return h('div',{id:'content'},
+  return h('div',{},
     pending1.length>0&&h('div',{class:'mb16'},
       h('h3',{style:{marginBottom:'10px'}},`一次承認待ち（${pending1.length}件）`),
       ...pending1.map(ev=>apvCard(ev,1))
@@ -1324,13 +1437,15 @@ function renderAdminDashboard(){
   evs.forEach(e=>{gDist[getG(calcSc(e.answers).total).g]++;});
 
   // Dept breakdown (for jimucho/incho/sysadmin)
-  const depts=[...new Set(DB.users.map(u=>u.dept))].filter(Boolean);
+  // 固定部署リストをベースに集計（DBにある部署のみ表示）
+  const usedDepts=[...new Set(DB.users.map(u=>u.dept))].filter(Boolean);
+  const depts=DEPTS.filter(d=>usedDepts.includes(d)).concat(usedDepts.filter(d=>!DEPTS.includes(d)));
   const deptData=depts.map(d=>{
     const devs=evs.filter(e=>e.evaluatee_dept===d);
     return{dept:d,count:devs.length,avg:devs.length?Math.round(devs.reduce((a,e)=>a+calcSc(e.answers).total,0)/devs.length):0};
   }).filter(d=>d.count>0);
 
-  return h('div',{id:'content'},
+  return h('div',{},
     h('div',{class:'g4 mb16'},
       ...[{l:'対象件数',v:`${evs.length}件`,c:'var(--teal)'},{l:'平均スコア',v:`${avg}点`,c:'var(--blue)'},{l:'S/A評価',v:`${(gDist.S||0)+(gDist.A||0)}名`,c:'var(--purple)'},{l:'C/D評価',v:`${(gDist.C||0)+(gDist.D||0)}名`,c:'var(--red)'}]
       .map(x=>h('div',{class:'card',style:{textAlign:'center'}},
@@ -1462,15 +1577,15 @@ function renderChangePw(){
     h('div',{style:{display:'grid',gap:'10px',marginBottom:'16px'}},
       h('div',null,
         h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'現在のパスワード'),
-        h('input',{type:'password',placeholder:'現在のパスワード',onInput(e){cur=e.target.value;}})
+        pwField('','現在のパスワード',function(e){cur=e.target.value;})
       ),
       h('div',null,
         h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'新しいパスワード'),
-        h('input',{type:'password',placeholder:'新しいパスワード（8文字以上推奨）',onInput(e){nw=e.target.value;}})
+        pwField('','新しいパスワード（8文字以上推奨）',function(e){nw=e.target.value;})
       ),
       h('div',null,
         h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'新しいパスワード（確認）'),
-        h('input',{type:'password',placeholder:'もう一度入力',onInput(e){cf=e.target.value;}})
+        pwField('','もう一度入力',function(e){cf=e.target.value;})
       )
     ),
     h('div',{class:'flex gap8'},
@@ -1562,8 +1677,10 @@ function renderModal(){
         ),
         h('div',null,
           h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'所属部署'),
-          h('input',{type:'text',value:uf.dept,placeholder:'例：看護部、リハビリ科…',list:'dept-list',onInput(e){upField('dept',e.target.value);}}),
-          h('datalist',{id:'dept-list'},...depts.map(d=>h('option',{value:d})))
+          h('select',{value:uf.dept,onChange(e){upField('dept',e.target.value);}},
+            h('option',{value:''},'— 選択してください —'),
+            ...DEPTS.map(d=>h('option',{value:d,selected:d===uf.dept},d))
+          )
         ),
         h('div',{class:'g2'},
           h('div',null,h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},'職種'),
@@ -1592,10 +1709,9 @@ function renderModal(){
         ),
         h('div',null,
           h('label',{class:'muted',style:{display:'block',marginBottom:'3px'}},isEdit?'パスワード（変更する場合のみ入力）':'パスワード（空欄なら生年月日8桁が自動設定）'),
-          h('input',{type:'password',value:isEdit?'':uf.password,
-            placeholder:isEdit?'変更する場合のみ入力':'生年月日から自動設定されます',
-            onInput(e){if(e.target.value)upField('password',e.target.value);}
-          }),
+          pwField('', isEdit?'変更する場合のみ入力':'生年月日から自動設定されます',
+            function(e){if(e.target.value)upField('password',e.target.value);}
+          ),
           !isEdit&&h('div',{id:'pw-hint',style:{fontSize:'11px',color:'var(--teal-d)',marginTop:'3px'}},
             uf.birthdate?'自動設定: '+uf.birthdate.replace(/-/g,''):'生年月日を入力すると自動設定されます'
           )
@@ -1623,8 +1739,9 @@ function renderModal(){
     body=h('div',null,
       h('h3',{style:{marginBottom:'12px'}},'☁ クラウド接続設定'),
       h('div',{style:{background:'var(--blue-l)',borderRadius:'7px',padding:'9px 12px',marginBottom:'14px',fontSize:'12px',color:'var(--blue-d)',lineHeight:'1.6'}},
-        'Google Apps Script の Web App URL と秘密キーを入力してください。',
-        h('br',null),'設定後、全職員がこのURLを使えばデータが共有されます。'
+        IS_FILE_PROTOCOL
+          ? '⚠ ローカルファイル（file://）で開いているため、クラウド同期は使えません。GitHub PagesなどのURLで開いてください。'
+          : 'Google Apps Script の Web App URL と秘密キーを入力してください。設定後、全職員がこのURLを使えばデータが共有されます。'
       ),
       h('div',{style:{display:'grid',gap:'10px',marginBottom:'14px'}},
         h('div',null,
@@ -1711,12 +1828,15 @@ function renderPageContent(){
 
 function render(){
   const app=document.getElementById('app');
+  if(!app)return;
+  try {
   app.innerHTML='';
   if(S.screen==='login'){
     app.appendChild(renderLogin());
     if(S.toast)app.appendChild(h('div',{class:'toast',style:{background:S.toast.type==='warn'?'var(--amber)':'var(--teal)'}},S.toast.msg));
     return;
   }
+  if(!S.user){S.screen='login';schedRender();return;}
 
   const isSupWithForm=S.page==='sup-eval'&&S.form;
 
@@ -1727,7 +1847,7 @@ function render(){
         h('span',null,PAGE_TITLES[S.page]||''),
         h('div',{class:'flex gap8'},
           h('span',{id:'sync-badge',style:{fontSize:'11px',padding:'3px 8px',borderRadius:'5px',background:'var(--bg3)',color:'var(--text3)'}},
-            CLOUD.url ? '☁ クラウド同期済' : 'ローカル保存'
+            IS_FILE_PROTOCOL ? '📁 ローカル動作' : (CLOUD.url ? '☁ クラウド同期済' : 'ローカル保存')
           ),
           ['sysadmin','jimucho'].includes(S.user?.role)&&
             btn('btn-secondary btn-sm no-print','☁ クラウド設定',()=>set({modal:{type:'cloud-config'}})),
@@ -1745,26 +1865,36 @@ function render(){
   app.appendChild(layout);
   const modal=renderModal();if(modal)app.appendChild(modal);
   if(S.toast)app.appendChild(h('div',{class:'toast',style:{background:S.toast.type==='warn'?'var(--amber)':'var(--teal)'}},S.toast.msg));
+  } catch(err){
+    // エラーを画面に表示（デバッグ用）
+    console.error('render error:', err);
+    app.innerHTML='';
+    const eDiv=document.createElement('div');
+    eDiv.style.cssText='position:fixed;top:0;left:0;right:0;background:#FCEBEB;color:#A32D2D;padding:20px;font-family:monospace;font-size:13px;z-index:9999;border-bottom:2px solid #E24B4A;';
+    eDiv.innerHTML='<b>表示エラー</b><br>'+err.message+'<br><br><small>'+err.stack+'</small><br><br><button onclick="location.reload()" style="padding:6px 14px;cursor:pointer;margin-right:8px">再読み込み</button><button onclick="localStorage.clear();location.reload()" style="padding:6px 14px;cursor:pointer;background:#E24B4A;color:#fff;border:none">データリセットして再起動</button>';
+    app.appendChild(eDiv);
+  }
 }
 
 // ── 初期化（クラウドから読み込み試行）──────────────
-async function init(){
-  // クラウド設定があればデータを取得
-  if(CLOUD.url && CLOUD.secret){
-    syncStatus='syncing';
-    const cloudData = await loadFromCloud();
-    if(cloudData && cloudData.users){
-      DB = cloudData;
-      saveDB(DB); // ローカルにもキャッシュ
-      syncStatus = 'synced';
-    } else {
-      syncStatus = 'error';
-    }
-  }
+function init(){
+  // 起動時は必ずローカルデータで表示（クラウドは後でバックグラウンド同期）
+  syncStatus = 'local';
   render();
+  // クラウド設定があれば非同期で最新データを取得して再描画
+  if(CLOUD.url && CLOUD.secret && !IS_FILE_PROTOCOL){
+    loadFromCloud().then(function(cloudData){
+      if(cloudData && cloudData.users){
+        DB = cloudData;
+        saveDB(DB);
+        syncStatus = 'synced';
+        schedRender();
+      }
+    }).catch(function(){ syncStatus='error'; });
+  }
 }
 
-init();
+try { init(); } catch(e){ console.error('init error:',e); render(); }
 </script>
 </body>
 </html>
