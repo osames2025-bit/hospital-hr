@@ -808,7 +808,7 @@ function renderDashboard(){
             h('span',{style:{fontWeight:'500',fontSize:'13px'}},t.name),
             h('span',{class:'muted',style:{marginLeft:'6px'}},t.dept)
           ),
-          btn('btn-sm',{class:'btn btn-primary btn-sm'},'評価を開始',()=>{
+          btn('btn-primary btn-sm','評価を開始',()=>{
             const selfEv=DB.evaluations.find(e=>e.evaluatee_id===t.id&&e.type==='self'&&e.status!=='draft');
             set({page:'sup-eval',splitSelf:selfEv,form:{step:0,answers:initAns(),profile:{period:DB.settings.period||PERIODS[0].v,shokushu:t.shokushu},targetUser:t},evalEditId:null});
           })
